@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Focus Center</h1>
+        </header>
+
+        <section class="card media-card">
+            <div class="thumbnail-large" id="mediaThumb">
+                <span>🎵</span>
+            </div>
+            <div id="trackTitle">No Media Detected</div>
+            <div id="trackArtist">Start playing music...</div>
+
+            <div class="controls" style="display: flex; gap: 20px;">
+                <button class="btn-circle" id="prev">⏮</button>
+                <button class="btn-circle btn-accent" id="playPause">⏯</button>
+                <button class="btn-circle" id="next">⏭</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="timer-adjuster">
+                <button class="btn-circle" id="decTime">-</button>
+                <div id="timer">25:00</div>
+                <button class="btn-circle" id="incTime">+</button>
+            </div>
+
+            <div class="session-setting">
+                <span>Target Sessions</span>
+                <input type="number" id="sessionTarget" value="4" min="1">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button id="startTimer" class="btn-primary" style="flex: 3;">Start Focus</button>
+                <button id="restartTimer" class="btn-circle" style="flex: 1; border-radius: 25px;">↺</button>
+            </div>
+
+            <div class="session-counter">Completed: <span id="completedSessions">0</span></div>
+
+            <div class="settings-toggle">
+                <button id="toggleSettings">Focus Rules ⚙️</button>
+                <div id="settingsMenu" class="settings-content">
+                    <div class="option-row">
+                        <span>Block All Sites</span>
+                        <input type="checkbox" id="blockAll" class="slider-input">
+                    </div>
+
+                    <div class="option-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <span>Selective Block</span>
+                        <textarea id="blockedSites" rows="3" placeholder="youtube.com&#10;instagram.com"></textarea>
+                    </div>
+
+                    <div class="option-row">
+                        <span>Remove JS (Clean Article)</span>
+                        <input type="checkbox" id="removeJS" class="slider-input">
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>
