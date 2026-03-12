@@ -369,3 +369,42 @@ body.break-mode .btn-primary {
     transform: rotate(-12deg);
     transition: 0.3s;
 }
+
+@keyframes zen-breathe {
+    0% {
+        background-size: 100% 100%;
+    }
+
+    50% {
+        background-size: 140% 140%;
+    }
+
+    /* Zooms in smoothly */
+    100% {
+        background-size: 100% 100%;
+    }
+}
+
+/* 2. Apply it to the body */
+body {
+    margin: 0;
+    padding: 16px;
+    background-color: var(--ctp-base);
+    color: var(--ctp-text);
+    min-height: 100vh;
+
+    /* Zen Mode Background Setup */
+    background: radial-gradient(circle at center, #1e1e2e, #11111b);
+    background-attachment: fixed;
+    background-position: center;
+
+    /* The 15-second breathing loop */
+    animation: zen-breathe 15s infinite ease-in-out;
+    transition: background 1.5s ease, color 0.5s ease;
+}
+
+/* 3. Stop the breathing during break mode so it feels distinct */
+body.break-mode {
+    background: radial-gradient(circle at center, #181825, #11111b);
+    animation: none;
+}

@@ -86,7 +86,6 @@ chrome.runtime.onMessage.addListener((message) => {
         const isCurrentlyBreaking = document.body.classList.contains('break-mode');
 
         if (!isCurrentlyBreaking) {
-            // Start Break
             document.body.classList.add('break-mode');
             timeLeft = 5 * 60;
             updateDisplay();
@@ -95,7 +94,6 @@ chrome.runtime.onMessage.addListener((message) => {
             startBtn.textContent = 'Pause Break';
             startBtn.style.background = 'var(--ctp-red)';
         } else {
-            // Return to Work
             document.body.classList.remove('break-mode');
             timeLeft = 25 * 60;
             updateDisplay();
@@ -132,11 +130,9 @@ const mediaThumb = document.getElementById('mediaThumb');
 function updateMediaUI() {
     chrome.runtime.sendMessage({ type: 'GET_MEDIA_INFO' }, (info) => {
         if (!info) return;
-
         trackTitle.textContent = info.title || 'No Media Detected';
         trackArtist.textContent = info.artist || 'Start playing music...';
 
-        // Update thumbnail if artwork exists, otherwise show the default music note
         if (info.art) {
             mediaThumb.innerHTML = `<img src="${info.art}" alt="Album Art">`;
         } else {
@@ -144,13 +140,10 @@ function updateMediaUI() {
         }
     });
 }
-
-// Check immediately when panel opens
 updateMediaUI();
-
-// Poll every 2 seconds to catch song changes
 setInterval(updateMediaUI, 2000);
 
+// --- Site Blocker Logic ---
 const blockAllToggle = document.getElementById('blockAll');
 const blockedSitesArea = document.getElementById('blockedSites');
 
@@ -162,7 +155,6 @@ function saveBlockSettings() {
         blockedSites: sites
     });
 
-    // Save to storage so it stays there when you close the panel
     chrome.storage.local.set({
         blockAll: blockAllToggle.checked,
         blockedSites: blockedSitesArea.value
@@ -172,8 +164,36 @@ function saveBlockSettings() {
 blockAllToggle.addEventListener('change', saveBlockSettings);
 blockedSitesArea.addEventListener('input', saveBlockSettings);
 
-// Load saved settings when panel opens
 chrome.storage.local.get(['blockAll', 'blockedSites'], (res) => {
     if (res.blockAll !== undefined) blockAllToggle.checked = res.blockAll;
     if (res.blockedSites !== undefined) blockedSitesArea.value = res.blockedSites;
+});
+
+// --- Content Cleanser Logic ---
+const removeJSToggle = document.getElementById('removeJS');
+
+removeJSToggle.addEventListener('change', async (e) => {
+    chrome.storage.local.set({ cleanseActive: e.target.checked });
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+        chrome.tabs.sendMessage(tab.id, {
+            type: 'TRIGGER_CLEANSE',
+            state: e.target.checked
+        });
+    }
+});
+
+chrome.storage.local.get(['cleanseActive'], (res) => {
+    if (res.cleanseActive) removeJSToggle.checked = true;
+});
+
+// --- NEW: Lofi Logic ---
+const lofiToggle = document.getElementById('lofiToggle');
+lofiToggle.addEventListener('change', (e) => {
+    chrome.runtime.sendMessage({ type: 'TOGGLE_LOFI', state: e.target.checked });
+    chrome.storage.local.set({ lofiPlaying: e.target.checked });
+});
+
+chrome.storage.local.get(['lofiPlaying'], (res) => {
+    if (res.lofiPlaying) lofiToggle.checked = true;
 });

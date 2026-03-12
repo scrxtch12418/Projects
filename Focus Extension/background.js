@@ -17,11 +17,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         executeMediaCommand(message.action);
     } else if (message.type === 'GET_MEDIA_INFO') {
         fetchMediaInfo().then(info => sendResponse(info));
-
         return true;
-    }
-    if (message.type === 'UPDATE_BLOCK_SETTINGS') {
+    } else if (message.type === 'UPDATE_BLOCK_SETTINGS') {
         updateBlockRules(message.blockAll, message.blockedSites);
+    } else if (message.type === 'TOGGLE_LOFI') {
+        setupOffscreenDocument().then(() => {
+            chrome.runtime.sendMessage({
+                target: 'offscreen',
+                type: message.state ? 'PLAY_LOFI' : 'PAUSE_LOFI'
+            });
+        });
     }
 });
 
@@ -53,10 +58,8 @@ function stopTimer() {
 }
 
 async function executeMediaCommand(action) {
-    // 1. Try to find a tab making sound
     let tabs = await chrome.tabs.query({ audible: true });
 
-    // 2. If nothing is playing sound (because it's paused!), look for media sites
     if (tabs.length === 0) {
         tabs = await chrome.tabs.query({ url: ["*://*.youtube.com/*", "*://*.spotify.com/*"] });
     }
@@ -70,41 +73,31 @@ async function executeMediaCommand(action) {
         func: (cmd) => {
             const host = window.location.hostname;
 
-            // --- SPOTIFY LOGIC ---
             if (host.includes('spotify.com')) {
                 if (cmd === 'playpause') document.querySelector('[data-testid="control-button-playpause"]')?.click();
                 if (cmd === 'next') document.querySelector('[data-testid="control-button-skip-forward"]')?.click();
                 if (cmd === 'prev') document.querySelector('[data-testid="control-button-skip-back"]')?.click();
-                return; // Exit out, we are done
+                return;
             }
 
-            // --- YOUTUBE / YOUTUBE MUSIC LOGIC ---
             if (host.includes('youtube.com')) {
-                if (cmd === 'playpause') {
-                    // Try YT Music first, then regular YT
-                    const btn = document.querySelector('#play-pause-button') || document.querySelector('.ytp-play-button');
-                    btn?.click();
+                const videoElement = document.querySelector('video');
+                if (videoElement) {
+                    if (cmd === 'playpause') videoElement.paused ? videoElement.play() : videoElement.pause();
+                    else if (cmd === 'next') document.querySelector('.ytp-next-button')?.click();
+                    else if (cmd === 'prev') document.querySelector('.ytp-prev-button')?.click();
                 }
-                if (cmd === 'next') {
-                    const btn = document.querySelector('.next-button') || document.querySelector('.ytp-next-button');
-                    btn?.click();
-                }
-                if (cmd === 'prev') {
-                    const btn = document.querySelector('.previous-button') || document.querySelector('.ytp-prev-button');
-                    btn?.click();
-                }
-                return; // Exit out, we are done
+                return;
             }
 
-            // --- GENERIC FALLBACK (For other random sites) ---
             const mediaElement = document.querySelector('video, audio');
             if (mediaElement) {
                 if (cmd === 'playpause') {
                     mediaElement.paused ? mediaElement.play() : mediaElement.pause();
                 } else if (cmd === 'next') {
-                    mediaElement.currentTime = mediaElement.duration; // Scrub to end
+                    mediaElement.currentTime = mediaElement.duration;
                 } else if (cmd === 'prev') {
-                    mediaElement.currentTime = 0; // Scrub to start
+                    mediaElement.currentTime = 0;
                 }
             }
         },
@@ -129,27 +122,22 @@ async function fetchMediaInfo() {
         const [{ result }] = await chrome.scripting.executeScript({
             target: { tabId: targetTab.id },
             func: () => {
-                // 1. Try the Media Session API (Best for Spotify/YouTube Music)
                 if (navigator.mediaSession && navigator.mediaSession.metadata) {
                     const meta = navigator.mediaSession.metadata;
                     return {
                         title: meta.title || document.title,
                         artist: meta.artist || '',
-                        // Grab the highest resolution artwork available
                         art: meta.artwork && meta.artwork.length > 0 ? meta.artwork[meta.artwork.length - 1].src : ''
                     };
                 }
 
-                // 2. Fallback for regular YouTube Videos
                 let art = '';
                 if (window.location.hostname.includes('youtube.com')) {
                     const ytVideoId = new URLSearchParams(window.location.search).get('v');
                     if (ytVideoId) art = `https://i.ytimg.com/vi/${ytVideoId}/maxresdefault.jpg`;
                 }
 
-                // Clean up notification numbers from tab titles e.g., "(2) Song Name" -> "Song Name"
                 const cleanTitle = document.title.replace(/^\(\d+\)\s+/, '');
-
                 return {
                     title: cleanTitle,
                     artist: window.location.hostname.replace('www.', ''),
@@ -164,14 +152,12 @@ async function fetchMediaInfo() {
 }
 
 async function updateBlockRules(isBlockingAll, blockedList) {
-    // 1. Clear out old rules first
     const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
     const oldRuleIds = oldRules.map(rule => rule.id);
 
     let newRules = [];
 
     if (isBlockingAll) {
-        // Rule to block EVERYTHING except the extension itself
         newRules.push({
             id: 1,
             priority: 1,
@@ -179,11 +165,10 @@ async function updateBlockRules(isBlockingAll, blockedList) {
             condition: { urlFilter: '*', resourceTypes: ['main_frame'] }
         });
     } else if (blockedList.length > 0) {
-        // Create a rule for each site in your list
         blockedList.forEach((site, index) => {
             if (site.trim().length > 0) {
                 newRules.push({
-                    id: index + 2, // IDs must be unique and > 0
+                    id: index + 2,
                     priority: 1,
                     action: { type: 'block' },
                     condition: {
@@ -195,9 +180,20 @@ async function updateBlockRules(isBlockingAll, blockedList) {
         });
     }
 
-    // Apply the new rules
     await chrome.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: oldRuleIds,
         addRules: newRules
+    });
+}
+
+// --- NEW: Lofi Offscreen Setup ---
+async function setupOffscreenDocument() {
+    const existingContexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
+    if (existingContexts.length > 0) return;
+
+    await chrome.offscreen.createDocument({
+        url: 'offscreen.html',
+        reasons: ['AUDIO_PLAYBACK'],
+        justification: 'Playing Lofi radio for focus mode'
     });
 }
