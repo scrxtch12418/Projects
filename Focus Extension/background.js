@@ -8,7 +8,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.type === 'STOP_TIMER') {
         stopTimer();
     } else if (message.type === 'GET_STATUS') {
-        // Synchronous response, no "return true" needed here
         sendResponse({ timeLeft, isRunning });
     } else if (message.type === 'SET_TIME') {
         if (!isRunning) {
@@ -17,7 +16,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else if (message.type === 'MEDIA_COMMAND') {
         executeMediaCommand(message.action);
     } else if (message.type === 'GET_MEDIA_INFO') {
-        // Asynchronous response: we have to fetch the data first!
         fetchMediaInfo().then(info => sendResponse(info));
 
         return true;
