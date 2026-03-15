@@ -3,14 +3,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.state) {
             activateZenReader();
         } else {
-            // To undo the cleanse, the easiest way is to just reload the page
+
             window.location.reload();
         }
     }
 });
 
 function activateZenReader() {
-    // 1. Seek and Destroy Junk (Ads, Navbars, Sidebars, Footers)
+
     const junkSelectors = [
         'aside', 'footer', 'nav', 'header', '.ad', '.ads', '.advertisement',
         '[class*="banner"]', '[id*="ad-"]', 'iframe', '.social-share', '#comments'
@@ -20,17 +20,17 @@ function activateZenReader() {
         document.querySelectorAll(selector).forEach(el => el.remove());
     });
 
-    // 2. Kill all inline scripts to stop popups from triggering
+
     document.querySelectorAll('script').forEach(s => s.remove());
 
     // 3. Find the main article content
     const mainContent = document.querySelector('article, main, [role="main"]') || document.body;
 
-    // 4. Strip the existing page styling and apply Catppuccin Theme
-    document.body.innerHTML = ''; // Wipe the body
-    document.body.appendChild(mainContent); // Put ONLY the article back
 
-    // 5. Inject CSS to make it look beautiful
+    document.body.innerHTML = '';
+    document.body.appendChild(mainContent);
+
+
     const style = document.createElement('style');
     style.textContent = `
         body {

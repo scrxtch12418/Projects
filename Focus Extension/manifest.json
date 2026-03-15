@@ -20,7 +20,7 @@
         "service_worker": "background.js"
     },
     "side_panel": {
-        "default_path": "index.html"
+        "default_path": "sidepanel/index.html"
     },
     "action": {
         "default_title": "Open Focus Center"
@@ -31,7 +31,7 @@
                 "<all_urls>"
             ],
             "js": [
-                "content.js"
+                "sidepanel/content.js"
             ]
         }
     ]
