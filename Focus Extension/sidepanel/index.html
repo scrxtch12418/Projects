@@ -8,8 +8,13 @@
 
 <body>
     <div class="container">
-        <header>
-            <h1>Focus Center</h1>
+        <header
+            style="display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 20px;">
+            <h1 style="margin: 0;">Focus Center</h1>
+            <button id="popOutBtn" title="Open in floating window"
+                style="position: absolute; right: 0; background: transparent; border: none; color: var(--ctp-subtext); cursor: pointer; font-size: 1.2rem; transition: color 0.2s;">
+                ⧉
+            </button>
         </header>
 
         <section class="card media-card">

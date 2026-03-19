@@ -1,3 +1,20 @@
+// --- Pop-out Window Logic ---
+const popOutBtn = document.getElementById('popOutBtn');
+
+popOutBtn.addEventListener('click', () => {
+    // Get the exact URL of your extension's index.html
+    const extensionUrl = chrome.runtime.getURL('index.html');
+
+    // Create a floating window that acts like a persistent side panel
+    chrome.windows.create({
+        url: extensionUrl,
+        type: 'popup',
+        width: 400,
+        height: 750,
+        focused: true
+    });
+});
+
 // --- Settings Toggle ---
 const settingsBtn = document.getElementById('toggleSettings');
 const settingsMenu = document.getElementById('settingsMenu');

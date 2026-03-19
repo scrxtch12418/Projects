@@ -23,7 +23,8 @@
         "default_path": "sidepanel/index.html"
     },
     "action": {
-        "default_title": "Open Focus Center"
+        "default_title": "Open Focus Center",
+        "default_popup": "sidepanel/index.html"
     },
     "content_scripts": [
         {

@@ -2,6 +2,11 @@ let timerInterval = null;
 let timeLeft = 25 * 60;
 let isRunning = false;
 
+// Force Chrome to open the Side Panel when the icon is clicked
+if (chrome.sidePanel) {
+    chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'START_TIMER') {
         startTimer();
