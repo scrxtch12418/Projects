@@ -191,7 +191,7 @@ async function updateBlockRules(isBlockingAll, blockedList) {
     });
 }
 
-// --- NEW: Lofi Offscreen Setup ---
+// ---Lofi Offscreen Setup ---
 async function setupOffscreenDocument() {
     const existingContexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
     if (existingContexts.length > 0) return;
