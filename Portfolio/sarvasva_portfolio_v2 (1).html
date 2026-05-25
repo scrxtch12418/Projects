@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SARVASVA :: PORTFOLIO</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --hot:#ff0040;
+  --acid:#d4ff00;
+  --cyan:#00ffea;
+  --purple:#bf00ff;
+  --orange:#ff6200;
+  --pink:#ff00aa;
+  --ink:#080808;
+  --paper:#f5f0e8;
+}
+body{background:var(--ink);color:var(--paper);font-family:'Space Mono',monospace;overflow:hidden;cursor:none;width:100%;height:100vh}
+
+/* CURSOR */
+#cDot,#cRing{position:fixed;pointer-events:none;z-index:99999;transform:translate(-50%,-50%)}
+#cDot{width:7px;height:7px;background:var(--hot)}
+#cRing{width:28px;height:28px;border:2px solid var(--hot);transition:left .07s,top .07s}
+.pxt{position:fixed;pointer-events:none;z-index:99998;animation:pxfly .6s ease-out forwards}
+@keyframes pxfly{from{opacity:1;transform:translateY(0) rotate(0)}to{opacity:0;transform:translateY(-52px) rotate(210deg)}}
+
+/* CRT EFFECTS */
+#noiseCanvas{position:fixed;inset:0;pointer-events:none;z-index:9000;opacity:.05;width:100%;height:100%}
+#scanlines{position:fixed;inset:0;pointer-events:none;z-index:9001;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.2) 2px,rgba(0,0,0,.2) 4px)}
+#rollingLine{position:fixed;left:0;right:0;height:3px;pointer-events:none;z-index:9002;background:rgba(255,255,255,.09);animation:rollLine 5s linear infinite;box-shadow:0 0 22px 8px rgba(212,255,0,.08)}
+@keyframes rollLine{from{top:-5px}to{top:100vh}}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:9003;background:radial-gradient(ellipse 88% 88% at 50% 50%,transparent 48%,rgba(0,0,0,.7) 100%),radial-gradient(ellipse 115% 115% at 50% 50%,transparent 38%,rgba(0,0,0,.4) 100%)}
+#centerGlow{position:fixed;inset:0;pointer-events:none;z-index:8999;background:radial-gradient(ellipse 52% 42% at 50% 50%,rgba(255,0,64,.025) 0%,transparent 68%);animation:glowPulse 4s ease-in-out infinite}
+@keyframes glowPulse{0%,100%{opacity:.6}50%{opacity:1}}
+.glow-blob{position:fixed;pointer-events:none;z-index:8998;border-radius:50%;animation:blobPulse var(--dur,3s) ease-in-out infinite var(--del,0s);filter:blur(48px)}
+@keyframes blobPulse{0%,100%{opacity:0}50%{opacity:var(--op,.1)}}
+#flickerEl{position:fixed;inset:0;pointer-events:none;z-index:9004;background:rgba(255,255,255,0);transition:background .05s}
+
+/* TICKER */
+#ticker{position:fixed;top:0;left:0;right:0;z-index:9500;background:var(--hot);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;padding:5px 0;overflow:hidden;white-space:nowrap;border-bottom:3px solid #000}
+.tick-inner{display:inline-block;animation:tickMove 32s linear infinite}
+@keyframes tickMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* NAV DOTS — right side, always visible */
+#navDots{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:9500;display:flex;flex-direction:column;gap:10px;align-items:center}
+.ndot{width:11px;height:11px;border:2px solid rgba(245,240,232,.4);background:transparent;cursor:pointer;transition:all .2s;position:relative}
+.ndot::after{content:attr(data-lbl);position:absolute;right:18px;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;white-space:nowrap;color:rgba(245,240,232,.0);pointer-events:none;transition:color .2s}
+.ndot:hover::after{color:rgba(245,240,232,.7)}
+.ndot.active{background:var(--hot);border-color:var(--hot);box-shadow:0 0 12px var(--hot);transform:scale(1.5)}
+.ndot:hover{border-color:var(--paper)}
+
+/* NAV BUTTONS — bottom strip */
+#navStrip{position:fixed;bottom:0;left:0;right:0;z-index:9500;display:flex;background:#000;border-top:3px solid var(--hot)}
+.nsb{flex:1;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;padding:9px 4px;background:transparent;border:none;border-right:1px solid rgba(245,240,232,.1);color:rgba(245,240,232,.35);cursor:pointer;transition:all .18s;text-align:center}
+.nsb:last-child{border-right:none}
+.nsb:hover,.nsb.active{background:var(--hot);color:#fff;letter-spacing:4px}
+
+/* SCROLLER */
+#scroller{position:fixed;left:0;right:0;top:23px;bottom:36px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#scroller::-webkit-scrollbar{display:none}
+.snap-sec{min-height:calc(100vh - 59px);width:100%;scroll-snap-align:start;position:relative;overflow:hidden;display:flex;flex-direction:column}
+
+/* REVEAL */
+.rv{opacity:0;transform:translateY(50px);transition:opacity .6s ease,transform .6s ease}
+.rv.sl{transform:translateX(-65px);opacity:0}
+.rv.sr{transform:translateX(65px);opacity:0}
+.rv.sc{transform:scale(.86);opacity:0}
+.rv.in{opacity:1!important;transform:none!important}
+
+/* SEC HEADER */
+.sec-hdr{display:flex;align-items:flex-end;gap:12px;padding:20px 30px 12px;border-bottom:4px solid var(--paper);flex-shrink:0}
+.sec-num{font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:1;color:var(--hot);opacity:.35;flex-shrink:0}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:1;letter-spacing:4px}
+.sec-title em{font-style:normal;-webkit-text-stroke:2px var(--paper);color:transparent}
+.sec-body{flex:1;overflow-y:auto;padding:16px 30px;scrollbar-width:thin;scrollbar-color:rgba(245,240,232,.15) transparent}
+.sec-body::-webkit-scrollbar{width:2px}
+.sec-body::-webkit-scrollbar-thumb{background:rgba(245,240,232,.2)}
+
+/* ══════════════════════
+   S0 — HERO
+══════════════════════ */
+#s0{border-bottom:4px solid var(--paper)}
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;flex:1;min-height:0}
+.hero-left{padding:32px 28px;border-right:4px solid var(--paper);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.hero-left::before{content:'S';position:absolute;right:-28px;bottom:-70px;font-family:'Bebas Neue';font-size:310px;color:rgba(255,0,64,.07);pointer-events:none;line-height:1}
+.h-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(46px,7vw,94px);line-height:.86;letter-spacing:2px}
+.h-name .outline{-webkit-text-stroke:2px var(--paper);color:transparent;display:block}
+.h-name .hot{color:var(--hot);display:block}
+.h-name .cyn{color:var(--cyan);display:block}
+.h-sub{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;letter-spacing:5px;color:var(--acid);margin-top:12px;text-transform:uppercase}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px}
+.tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;padding:4px 9px;border:2px solid;cursor:pointer;transition:all .15s;text-transform:uppercase;user-select:none}
+.tag:nth-child(5n+1){color:var(--hot);border-color:var(--hot)}
+.tag:nth-child(5n+2){color:var(--acid);border-color:var(--acid)}
+.tag:nth-child(5n+3){color:var(--cyan);border-color:var(--cyan)}
+.tag:nth-child(5n+4){color:var(--pink);border-color:var(--pink)}
+.tag:nth-child(5n){color:var(--orange);border-color:var(--orange)}
+.tag:hover{background:var(--hot);color:#000;border-color:var(--hot);box-shadow:0 0 16px var(--hot)}
+.h-stats{display:flex;border-top:3px solid rgba(245,240,232,.15);margin-top:20px;padding-top:16px}
+.hstat{flex:1;text-align:center;border-right:1px solid rgba(245,240,232,.12);padding:0 6px}
+.hstat:last-child{border-right:none}
+.hstat-n{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--acid);display:block;line-height:1;text-shadow:0 0 20px var(--acid)}
+.hstat-l{font-size:7px;letter-spacing:2px;color:rgba(245,240,232,.35);text-transform:uppercase}
+
+.hero-right{background:var(--paper);color:var(--ink);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.photo-zone{flex:1;display:flex;align-items:center;justify-content:center;position:relative;border-bottom:3px solid var(--ink);overflow:hidden}
+.poster-bg-txt{position:absolute;inset:0;display:flex;align-items:center;padding:18px;pointer-events:none;z-index:1}
+.pbt{font-family:'Bebas Neue',sans-serif;font-size:clamp(28px,5vw,54px);line-height:.84;color:rgba(13,13,13,.08);letter-spacing:2px}
+/* ========================
+   TO ADD YOUR PHOTO:
+   Replace the .photo-placeholder div with:
+   <img src="your-photo.jpg" style="width:175px;height:220px;object-fit:cover;position:relative;z-index:2;border:3px solid #080808;filter:grayscale(20%)">
+   ======================== */
+.photo-placeholder{width:175px;height:220px;border:3px dashed rgba(8,8,8,.22);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;z-index:2;cursor:pointer;transition:all .2s}
+.photo-placeholder:hover{border-color:var(--hot);border-style:solid;box-shadow:0 0 30px rgba(255,0,64,.3)}
+.pp-icon{font-size:30px;color:rgba(8,8,8,.18);font-family:'Bebas Neue'}
+.pp-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(8,8,8,.28);text-align:center;text-transform:uppercase;line-height:1.7}
+.poster-bar{background:var(--ink);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0;border-top:3px solid var(--hot)}
+.pb-quote{font-family:'Space Grotesk',sans-serif;font-size:10px;font-weight:700;color:var(--hot);line-height:1.4;max-width:160px}
+.pb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.pb-hp-label{font-family:'Bebas Neue',sans-serif;font-size:13px;color:var(--hot);text-shadow:0 0 10px var(--hot)}
+.pb-track{width:68px;height:5px;background:rgba(245,240,232,.08);border:1px solid rgba(245,240,232,.18)}
+.pb-fill{height:100%;width:94%;background:var(--hot);box-shadow:0 0 8px var(--hot)}
+#clk{font-family:'Space Mono',monospace;font-size:9px;color:rgba(245,240,232,.4)}
+
+.scroll-hint{text-align:center;padding:7px 0 10px;font-family:'Space Mono',monospace;font-size:8px;letter-spacing:3px;color:rgba(245,240,232,.18);text-transform:uppercase;flex-shrink:0}
+.sh-arr{display:block;font-size:13px;margin-top:3px;animation:arrbounce 1.5s ease-in-out infinite;color:var(--acid)}
+@keyframes arrbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* ══════════════════════
+   S1 — SKILLS
+══════════════════════ */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--hot)}
+.sk{background:var(--ink);padding:18px}
+.sk-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sk-title::before{content:'';width:10px;height:10px;flex-shrink:0}
+.sk:nth-child(1) .sk-title{color:var(--hot)}.sk:nth-child(1) .sk-title::before{background:var(--hot);box-shadow:0 0 10px var(--hot)}
+.sk:nth-child(2) .sk-title{color:var(--acid)}.sk:nth-child(2) .sk-title::before{background:var(--acid);box-shadow:0 0 10px var(--acid)}
+.sk:nth-child(3) .sk-title{color:var(--cyan)}.sk:nth-child(3) .sk-title::before{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+.sk:nth-child(4) .sk-title{color:var(--purple)}.sk:nth-child(4) .sk-title::before{background:var(--purple);box-shadow:0 0 10px var(--purple)}
+.sr-row{margin-bottom:9px}
+.sr-lbl{display:flex;justify-content:space-between;font-size:9px;letter-spacing:1px;margin-bottom:4px;text-transform:uppercase;color:rgba(245,240,232,.7)}
+.sr-lbl span{color:rgba(245,240,232,.35)}
+.sr-track{height:3px;background:rgba(245,240,232,.08)}
+.sr-fill{height:100%;width:0;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+.sk:nth-child(1) .sr-fill{background:var(--hot);box-shadow:0 0 6px var(--hot)}
+.sk:nth-child(2) .sr-fill{background:var(--acid);box-shadow:0 0 6px var(--acid)}
+.sk:nth-child(3) .sr-fill{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.sk:nth-child(4) .sr-fill{background:var(--purple);box-shadow:0 0 6px var(--purple)}
+.brow{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.badge{font-size:8px;letter-spacing:1px;padding:3px 6px;border:1px solid rgba(245,240,232,.2);color:rgba(245,240,232,.4);text-transform:uppercase}
+
+/* ══════════════════════
+   S2 — PROJECTS
+══════════════════════ */
+.pg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;background:var(--acid)}
+.pc{background:var(--ink);padding:20px 18px;position:relative;overflow:hidden;cursor:pointer;transition:background .18s}
+.pc::before{content:attr(data-n);position:absolute;right:6px;bottom:-26px;font-family:'Bebas Neue',sans-serif;font-size:110px;color:rgba(255,255,255,.03);line-height:1;pointer-events:none}
+.pc:hover{background:#111}
+.p-rarity{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase}
+.p-rarity.epic{color:var(--purple);text-shadow:0 0 8px var(--purple)}
+.p-rarity.rare{color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+.p-rarity.uncommon{color:var(--acid);text-shadow:0 0 8px var(--acid)}
+.p-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;line-height:1.1;margin-bottom:9px;color:var(--paper)}
+.p-desc{font-size:10px;line-height:1.7;color:rgba(245,240,232,.5);margin-bottom:11px}
+.ptags{display:flex;flex-wrap:wrap;gap:4px}
+.ptag{font-size:8px;letter-spacing:1px;padding:2px 5px;border:1px solid rgba(245,240,232,.15);color:rgba(245,240,232,.32);text-transform:uppercase}
+
+/* ══════════════════════
+   S3 — DESIGN GALLERY
+══════════════════════ */
+.design-info-bar{background:rgba(245,240,232,.06);border-left:4px solid var(--acid);padding:8px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.design-info-bar span{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(245,240,232,.4);text-transform:uppercase}
+
+/* MASONRY-STYLE GALLERY */
+.dg-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+/* Vary heights for masonry feel */
+.dg-grid .di{
+  position:relative;overflow:hidden;cursor:pointer;background:var(--ink);
+  border:2px solid rgba(245,240,232,.06);
+  transition:border-color .2s;
+}
+.dg-grid .di:nth-child(3n+1){grid-row:span 1}
+.dg-grid .di:nth-child(1){grid-column:span 2;min-height:160px}
+.dg-grid .di:nth-child(2){min-height:160px}
+.dg-grid .di:nth-child(3){min-height:120px}
+.dg-grid .di:nth-child(4){min-height:120px}
+.dg-grid .di:nth-child(5){min-height:130px}
+.dg-grid .di:nth-child(6){grid-column:span 2;min-height:130px}
+
+.di-img{
+  width:100%;height:100%;object-fit:cover;
+  display:block;
+  transition:transform .4s cubic-bezier(.2,0,.2,1);
+  filter:saturate(1.1) contrast(1.05);
+}
+.di:hover .di-img{transform:scale(1.08)}
+.di:hover{border-color:var(--hot);box-shadow:0 0 20px rgba(255,0,64,.25);z-index:2}
+
+/* PLACEHOLDER version (when no image) */
+.di-placeholder{
+  width:100%;height:100%;min-height:inherit;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;padding:16px;
+  transition:transform .4s cubic-bezier(.2,0,.2,1);
+}
+.di:hover .di-placeholder{transform:scale(1.06)}
+.di-ph-icon{font-family:'Bebas Neue',sans-serif;font-size:32px}
+.di-ph-name{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;text-align:center}
+.di-ph-sub{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;opacity:.45;text-align:center;text-transform:uppercase}
+
+/* HOVER OVERLAY */
+.di-ov{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:14px;
+  transition:background .3s;
+  pointer-events:none;
+}
+.di:hover .di-ov{background:rgba(0,0,0,.72)}
+.di-ov-title{
+  font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:3px;
+  color:var(--paper);opacity:0;transform:translateY(16px);
+  transition:all .3s ease;
+}
+.di-ov-sub{
+  font-size:9px;letter-spacing:2px;color:rgba(245,240,232,.55);
+  opacity:0;transform:translateY(16px);
+  transition:all .3s ease .05s;text-transform:uppercase;
+}
+.di:hover .di-ov-title,.di:hover .di-ov-sub{opacity:1;transform:translateY(0)}
+
+/* HOW TO ADD IMAGES comment */
+/* Replace the .di-placeholder div inside each .di with:
+   <img class="di-img" src="your-design.jpg" alt="Design name">
+   The grid handles sizing automatically. */
+
+/* ══════════════════════
+   S4 — SPEAKING / HOSTING
+══════════════════════ */
+.speak-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--cyan)}
+.speak-card{background:var(--ink);padding:22px 20px;position:relative;overflow:hidden;border-top:4px solid transparent;transition:border-color .2s}
+.speak-card:hover{border-top-color:var(--cyan)}
+.speak-card::before{content:attr(data-icon);position:absolute;right:14px;top:12px;font-size:40px;opacity:.1;pointer-events:none}
+.speak-type{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:8px;text-shadow:0 0 8px var(--cyan)}
+.speak-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--paper);margin-bottom:8px;line-height:1.1}
+.speak-meta{font-size:9px;letter-spacing:1px;color:rgba(245,240,232,.35);margin-bottom:10px;text-transform:uppercase}
+.speak-desc{font-size:10px;line-height:1.7;color:rgba(245,240,232,.52)}
+.speak-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.speak-tag{font-size:8px;letter-spacing:1px;padding:2px 6px;border:1px solid rgba(0,255,234,.25);color:rgba(0,255,234,.5);text-transform:uppercase}
+
+.speak-add-placeholder{
+  background:rgba(0,255,234,.04);
+  border:2px dashed rgba(0,255,234,.2);
+  padding:22px 20px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;text-align:center;cursor:pointer;transition:all .2s;
+}
+.speak-add-placeholder:hover{border-color:var(--cyan);background:rgba(0,255,234,.08)}
+.sap-icon{font-family:'Bebas Neue',sans-serif;font-size:28px;color:rgba(0,255,234,.3)}
+.sap-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(0,255,234,.35);text-transform:uppercase;line-height:1.7}
+
+/* ══════════════════════
+   S5 — ABOUT
+══════════════════════ */
+.asplit{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--purple);flex:1}
+.aleft,.aright{background:var(--ink);padding:22px}
+.statg{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--acid);margin-bottom:3px}
+.stc{background:var(--ink);padding:14px;text-align:center}
+.stbig{font-family:'Bebas Neue',sans-serif;font-size:38px;color:var(--acid);display:block;line-height:1;text-shadow:0 0 20px var(--acid)}
+.stsm{font-size:8px;letter-spacing:2px;color:rgba(245,240,232,.3);text-transform:uppercase;display:block;margin-top:3px}
+.term{background:#000;border:1px solid rgba(245,240,232,.08);padding:14px;font-size:11px;line-height:2;margin-bottom:10px}
+.term .p{color:var(--cyan)}.term .o{color:rgba(245,240,232,.5)}
+.certs{display:flex;flex-direction:column;gap:2px;margin-bottom:14px}
+.cert{background:rgba(212,255,0,.05);border-left:3px solid var(--acid);padding:7px 10px;font-size:9px;letter-spacing:1px;color:var(--acid);text-transform:uppercase}
+.cbtns{display:flex;flex-direction:column;gap:2px}
+.cbtn{display:flex;align-items:center;gap:10px;padding:11px 13px;background:transparent;border:2px solid rgba(245,240,232,.15);color:var(--paper);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;text-decoration:none;text-transform:uppercase;cursor:pointer;transition:all .15s}
+.cbtn:hover{background:var(--hot);border-color:var(--hot);color:#fff;box-shadow:0 0 20px var(--hot)}
+.cbtn .arr{margin-left:auto}
+
+/* ══════════════════════
+   S6 — QUIZ
+══════════════════════ */
+.qwrap{padding:16px 30px;flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(245,240,232,.12) transparent}
+.qwrap::-webkit-scrollbar{width:2px}
+.qwrap::-webkit-scrollbar-thumb{background:rgba(245,240,232,.2)}
+.qmeta{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid rgba(245,240,232,.1);padding-bottom:10px;margin-bottom:14px}
+.qscore{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--acid);text-shadow:0 0 12px var(--acid)}
+.qpips{display:flex;gap:5px;flex-wrap:wrap}
+.pip{width:10px;height:10px;border:2px solid rgba(245,240,232,.18);background:transparent;transition:all .3s}
+.pip.c{background:var(--acid);border-color:var(--acid);box-shadow:0 0 6px var(--acid)}
+.pip.w{background:var(--hot);border-color:var(--hot);box-shadow:0 0 6px var(--hot)}
+.pip.cur{border-color:var(--paper);animation:pb .8s step-end infinite}
+@keyframes pb{0%,100%{opacity:1}50%{opacity:.2}}
+.qtxt{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;line-height:1.4;margin-bottom:14px;min-height:46px;color:var(--paper)}
+.qopts{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:rgba(245,240,232,.07);margin-bottom:12px}
+.qopt{background:var(--ink);border:none;padding:13px;font-family:'Space Mono',monospace;font-size:11px;color:rgba(245,240,232,.6);text-align:left;cursor:pointer;transition:all .15s;position:relative;border-left:3px solid transparent}
+.qopt::before{content:attr(data-l);font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(245,240,232,.2);margin-right:8px}
+.qopt:hover:not(:disabled){background:#111;color:var(--paper);border-left-color:var(--hot)}
+.qopt.c{background:rgba(212,255,0,.1);color:var(--acid);border-left-color:var(--acid)}
+.qopt.w{background:rgba(255,0,64,.1);color:var(--hot);border-left-color:var(--hot)}
+.qopt:disabled{cursor:default}
+.qfb{font-size:12px;min-height:20px;line-height:1.5;padding:10px 0;border-top:1px solid rgba(245,240,232,.07)}
+.qnxt{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:4px;padding:10px 24px;background:var(--paper);color:var(--ink);border:none;cursor:pointer;margin-top:10px;display:none;transition:all .15s}
+.qnxt:hover{background:var(--acid)}
+.qres{display:none;text-align:center;padding:28px 20px}
+.rscore{font-family:'Bebas Neue',sans-serif;font-size:88px;color:var(--acid);line-height:1;display:block;text-shadow:0 0 40px var(--acid)}
+.rlabel{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:4px;display:block;margin-bottom:5px}
+.rmsg{font-size:12px;color:rgba(245,240,232,.5);margin-bottom:22px;line-height:1.7;white-space:pre-line}
+.rbtn{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:4px;padding:12px 30px;background:var(--hot);color:#fff;border:none;cursor:pointer;box-shadow:0 0 20px var(--hot)}
+.rbtn:hover{background:#cc0033}
+
+/* KONAMI */
+#konami{display:none;position:fixed;inset:0;z-index:99990;background:var(--ink);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px}
+#konami.show{display:flex}
+.k-big{font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,6vw,68px);letter-spacing:5px;color:var(--acid);margin-bottom:16px;animation:glitch 2s infinite;line-height:1;text-shadow:0 0 40px var(--acid)}
+@keyframes glitch{0%,90%,100%{text-shadow:0 0 40px var(--acid);transform:none}91%{text-shadow:-3px 0 var(--hot),3px 0 var(--cyan);transform:translate(-2px,1px)}92%{text-shadow:3px 0 var(--hot),-3px 0 var(--cyan);transform:translate(2px,-1px)}}
+.k-sub{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:3px;color:rgba(245,240,232,.4);margin-bottom:24px;line-height:2;text-transform:uppercase}
+.k-close{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:4px;padding:12px 30px;background:transparent;border:2px solid var(--paper);color:var(--paper);cursor:pointer;transition:all .15s}
+.k-close:hover{background:var(--paper);color:var(--ink)}
+
+@media(max-width:700px){
+  .hero-grid,.sg,.pg,.speak-grid,.asplit,.qopts{grid-template-columns:1fr}
+  .dg-grid{grid-template-columns:1fr 1fr}
+  .dg-grid .di:nth-child(1){grid-column:span 2}
+  .dg-grid .di:nth-child(6){grid-column:span 2}
+  .statg{grid-template-columns:1fr 1fr}
+  .sec-body{padding:12px 14px}
+  .sec-hdr{padding:14px 14px 10px}
+  #navDots{right:6px}
+  #navStrip .nsb{font-size:10px;letter-spacing:1px;padding:7px 2px}
+}
+</style>
+</head>
+<body>
+
+<div id="cDot"></div>
+<div id="cRing"></div>
+<canvas id="noiseCanvas"></canvas>
+<div id="scanlines"></div>
+<div id="rollingLine"></div>
+<div id="vignette"></div>
+<div id="centerGlow"></div>
+<div id="flickerEl"></div>
+
+<!-- GLOW BLOBS — punchier colors -->
+<div class="glow-blob" style="width:340px;height:230px;background:#ff0040;--dur:4s;--del:0s;--op:.1;left:5%;top:15%"></div>
+<div class="glow-blob" style="width:280px;height:210px;background:#d4ff00;--dur:5s;--del:1.5s;--op:.08;right:10%;top:50%"></div>
+<div class="glow-blob" style="width:220px;height:220px;background:#00ffea;--dur:6s;--del:3s;--op:.08;left:35%;bottom:5%"></div>
+<div class="glow-blob" style="width:250px;height:170px;background:#bf00ff;--dur:4.5s;--del:2s;--op:.1;right:3%;top:18%"></div>
+<div class="glow-blob" style="width:200px;height:180px;background:#ff00aa;--dur:5.5s;--del:0.8s;--op:.08;left:55%;top:5%"></div>
+
+<div id="konami">
+  <div class="k-big">CHEAT CODE<br>ACTIVATED</div>
+  <div class="k-sub">CLASS: LEGENDARY DEVELOPER<br>ALL SKILLS MAXED · INFINITE XP<br>"You exist because the universe wanted a hacker, Morty."</div>
+  <button class="k-close" onclick="document.getElementById('konami').classList.remove('show')">PRESS START TO CONTINUE</button>
+</div>
+
+<!-- TICKER -->
+<div id="ticker">
+  <div class="tick-inner">
+    &nbsp;&nbsp;★ SARVASVA.EXE &nbsp;|&nbsp; PENTESTER · FULL STACK · DESIGNER · QUIZ HOST · PUBLIC SPEAKER &nbsp;|&nbsp; ⬆⬆⬇⬇⬅➡⬅➡ BA → SECRET &nbsp;|&nbsp; WUBBA LUBBA DUB DUB &nbsp;|&nbsp; DIMENSION C-137 &nbsp;|&nbsp; SCROLL TO EXPLORE &nbsp;|&nbsp; ★ SARVASVA.EXE &nbsp;|&nbsp; PENTESTER · FULL STACK · DESIGNER · QUIZ HOST · PUBLIC SPEAKER &nbsp;|&nbsp; ⬆⬆⬇⬇⬅➡⬅➡ BA → SECRET &nbsp;|&nbsp; WUBBA LUBBA DUB DUB &nbsp;|&nbsp; DIMENSION C-137 &nbsp;|&nbsp; SCROLL TO EXPLORE &nbsp;|&nbsp;
+  </div>
+</div>
+
+<!-- NAV DOTS (right side) -->
+<div id="navDots">
+  <div class="ndot active" data-lbl="HOME" onclick="goSec(0)"></div>
+  <div class="ndot" data-lbl="SKILLS" onclick="goSec(1)"></div>
+  <div class="ndot" data-lbl="PROJECTS" onclick="goSec(2)"></div>
+  <div class="ndot" data-lbl="DESIGN" onclick="goSec(3)"></div>
+  <div class="ndot" data-lbl="SPEAKING" onclick="goSec(4)"></div>
+  <div class="ndot" data-lbl="ABOUT" onclick="goSec(5)"></div>
+  <div class="ndot" data-lbl="QUIZ" onclick="goSec(6)"></div>
+</div>
+
+<!-- NAV STRIP (bottom) -->
+<div id="navStrip">
+  <button class="nsb active" onclick="goSec(0);setActive(this)">HOME</button>
+  <button class="nsb" onclick="goSec(1);setActive(this)">SKILLS</button>
+  <button class="nsb" onclick="goSec(2);setActive(this)">PROJECTS</button>
+  <button class="nsb" onclick="goSec(3);setActive(this)">DESIGN</button>
+  <button class="nsb" onclick="goSec(4);setActive(this)">SPEAKING</button>
+  <button class="nsb" onclick="goSec(5);setActive(this)">ABOUT</button>
+  <button class="nsb" onclick="goSec(6);setActive(this);initQ()">QUIZ</button>
+</div>
+
+<div id="scroller">
+
+  <!-- S0: HERO -->
+  <section class="snap-sec" id="s0">
+    <div class="hero-grid" style="flex:1;min-height:0">
+      <div class="hero-left">
+        <div>
+          <div class="h-name rv">
+            <span class="outline">SARVASVA</span>
+            <span class="hot">/ HACKER</span>
+            <span class="cyn">/ BUILDER</span>
+          </div>
+          <div class="h-sub rv" style="transition-delay:.1s">CS Undergrad · Cybersec · Design · AI · Quiz Host · Speaker</div>
+          <div class="tags rv" style="transition-delay:.18s">
+            <span class="tag" onclick="bTag(this)">PENTESTER</span>
+            <span class="tag" onclick="bTag(this)">CTF PLAYER</span>
+            <span class="tag" onclick="bTag(this)">FULL STACK</span>
+            <span class="tag" onclick="bTag(this)">RED TEAM</span>
+            <span class="tag" onclick="bTag(this)">AI BUILDER</span>
+            <span class="tag" onclick="bTag(this)">QUIZ HOST</span>
+            <span class="tag" onclick="bTag(this)">DESIGNER</span>
+            <span class="tag" onclick="bTag(this)">PUBLIC SPEAKER</span>
+            <span class="tag" onclick="bTag(this)">PORTAL GUN: LOADED</span>
+          </div>
+        </div>
+        <div class="h-stats rv" style="transition-delay:.26s">
+          <div class="hstat"><span class="hstat-n">2028</span><span class="hstat-l">Grad</span></div>
+          <div class="hstat"><span class="hstat-n">CTF</span><span class="hstat-l">Active</span></div>
+          <div class="hstat"><span class="hstat-n">4+</span><span class="hstat-l">Certs</span></div>
+          <div class="hstat"><span class="hstat-n">2+</span><span class="hstat-l">Events Hosted</span></div>
+          <div class="hstat"><span class="hstat-n">&#8734;</span><span class="hstat-l">Curiosity</span></div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="photo-zone">
+          <div class="poster-bg-txt">
+            <div class="pbt">DON'T<br>BLINK<br>OR<br>YOU'LL<br>MISS IT</div>
+          </div>
+          <!--
+          ====================================================
+          TO ADD YOUR PHOTO — replace this entire div with:
+          <img src="your-photo.jpg" style="width:175px;height:220px;
+               object-fit:cover;position:relative;z-index:2;
+               border:3px solid #080808;filter:grayscale(15%)">
+          ====================================================
+          -->
+          <div class="photo-placeholder rv sr" style="transition-delay:.22s">
+            <div class="pp-icon">+</div>
+            <div class="pp-label">YOUR PHOTO<br>GOES HERE<br><br><span style="font-size:8px;opacity:.4">see HTML comment above</span></div>
+          </div>
+        </div>
+        <div class="poster-bar">
+          <div class="pb-quote rv" style="transition-delay:.3s">"I'M DEVELOPER RICK!"</div>
+          <div class="pb-right">
+            <span class="pb-hp-label">HP</span>
+            <div class="pb-track"><div class="pb-fill"></div></div>
+            <span id="clk">00:00:00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scroll-hint">scroll to explore <span class="sh-arr">&#8595;</span></div>
+  </section>
+
+  <!-- S1: SKILLS -->
+  <section class="snap-sec" id="s1">
+    <div class="sec-hdr">
+      <div class="sec-num">02</div>
+      <div class="sec-title rv sl">SKILL <em>TREE</em></div>
+    </div>
+    <div class="sec-body">
+      <div class="sg">
+        <div class="sk rv" style="transition-delay:.05s">
+          <div class="sk-title">CYBER / OFFENSE</div>
+          <div class="sr-row"><div class="sr-lbl">Penetration Testing<span>LVL 8</span></div><div class="sr-track"><div class="sr-fill" data-w="80"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">Red Teaming<span>LVL 7</span></div><div class="sr-track"><div class="sr-fill" data-w="72"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">CTF Competitions<span>LVL 8</span></div><div class="sr-track"><div class="sr-fill" data-w="80"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">LLM Security<span>LVL 9</span></div><div class="sr-track"><div class="sr-fill" data-w="88"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">Reverse Shells<span>LVL 7</span></div><div class="sr-track"><div class="sr-fill" data-w="70"></div></div></div>
+          <div class="brow"><span class="badge">Metasploit</span><span class="badge">Kali Linux</span><span class="badge">OWASP</span><span class="badge">Wireshark</span></div>
+        </div>
+        <div class="sk rv" style="transition-delay:.1s">
+          <div class="sk-title">LANGUAGES</div>
+          <div class="sr-row"><div class="sr-lbl">Python<span>LVL 9</span></div><div class="sr-track"><div class="sr-fill" data-w="90"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">JavaScript<span>LVL 8</span></div><div class="sr-track"><div class="sr-fill" data-w="80"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">React.js<span>LVL 7</span></div><div class="sr-track"><div class="sr-fill" data-w="74"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">FastAPI<span>LVL 8</span></div><div class="sr-track"><div class="sr-fill" data-w="78"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">Java / C#<span>LVL 6</span></div><div class="sr-track"><div class="sr-fill" data-w="60"></div></div></div>
+          <div class="brow"><span class="badge">Node.js</span><span class="badge">Express</span><span class="badge">REST API</span></div>
+        </div>
+        <div class="sk rv" style="transition-delay:.15s">
+          <div class="sk-title">DESIGN</div>
+          <div class="sr-row"><div class="sr-lbl">Graphic Design<span>LVL 8</span></div><div class="sr-track"><div class="sr-fill" data-w="80"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">Event Posters<span>LVL 8</span></div><div class="sr-track"><div class="sr-fill" data-w="82"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">Social Media<span>LVL 7</span></div><div class="sr-track"><div class="sr-fill" data-w="75"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">Quiz / Event Hosting<span>LVL 9</span></div><div class="sr-track"><div class="sr-fill" data-w="88"></div></div></div>
+          <div class="brow"><span class="badge">Grey Matter QDC</span><span class="badge">Incridea '26</span></div>
+        </div>
+        <div class="sk rv" style="transition-delay:.2s">
+          <div class="sk-title">AI / ML</div>
+          <div class="sr-row"><div class="sr-lbl">LLM Integration<span>LVL 9</span></div><div class="sr-track"><div class="sr-fill" data-w="88"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">RAG Systems<span>LVL 7</span></div><div class="sr-track"><div class="sr-fill" data-w="72"></div></div></div>
+          <div class="sr-row"><div class="sr-lbl">LSTM / ML<span>LVL 7</span></div><div class="sr-track"><div class="sr-fill" data-w="70"></div></div></div>
+          <div class="brow"><span class="badge">Ollama</span><span class="badge">LangChain</span><span class="badge">Prompt Eng.</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S2: PROJECTS -->
+  <section class="snap-sec" id="s2">
+    <div class="sec-hdr">
+      <div class="sec-num">03</div>
+      <div class="sec-title rv sl">QUEST <em>LOG</em></div>
+    </div>
+    <div class="sec-body">
+      <div class="pg">
+        <div class="pc rv" data-n="01">
+          <div class="p-rarity epic">&#9670; EPIC RARITY</div>
+          <div class="p-title">LLM SECURITY FRAMEWORK</div>
+          <div class="p-desc">Red-teaming framework with input/output validation pipelines. Detects prompt injection across 11 categories — API keys, SSNs, JWT tokens. Confidence scoring + severity classification. Full CLI tool with test suite.</div>
+          <div class="ptags"><span class="ptag">Python</span><span class="ptag">NLP</span><span class="ptag">spaCy</span><span class="ptag">LangChain</span><span class="ptag">Red Team</span></div>
+        </div>
+        <div class="pc rv" data-n="02" style="transition-delay:.08s">
+          <div class="p-rarity rare">&#9670; RARE RARITY</div>
+          <div class="p-title">RAT — ETHICAL RESEARCH</div>
+          <div class="p-desc">Python Remote Access Trojan in a controlled lab — reverse shell, remote command execution, file exfiltration. Documented threat-model analysis. For ethical use only.</div>
+          <div class="ptags"><span class="ptag">Python</span><span class="ptag">Sockets</span><span class="ptag">Ethical Hacking</span><span class="ptag">Threat Modeling</span></div>
+        </div>
+        <div class="pc rv" data-n="03" style="transition-delay:.16s">
+          <div class="p-rarity uncommon">&#9670; UNCOMMON</div>
+          <div class="p-title">ADHD FOCUS EXTENSION</div>
+          <div class="p-desc">Published Chrome extension — focus timers, site-blocking, task reminders. Chrome Extensions API for persistent storage and tab management.</div>
+          <div class="ptags"><span class="ptag">HTML/CSS</span><span class="ptag">JavaScript</span><span class="ptag">Chrome API</span><span class="ptag">UX Design</span></div>
+        </div>
+      </div>
+      <div style="background:var(--hot);padding:12px 18px;margin-top:3px">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;color:#fff">"That's a side quest, Morty. Everything in life is a side quest."</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- S3: DESIGN GALLERY -->
+  <section class="snap-sec" id="s3">
+    <div class="sec-hdr">
+      <div class="sec-num">04</div>
+      <div class="sec-title rv sl">DESIGN <em>GALLERY</em></div>
+    </div>
+    <div class="sec-body">
+      <div class="design-info-bar">
+        <span>Grey Matter QDC &nbsp;&#183;&nbsp; Incridea '26 &nbsp;&#183;&nbsp; Event Design</span>
+        <span style="color:rgba(245,240,232,.25)">Hover to enlarge</span>
+      </div>
+      <!--
+      =====================================================
+      HOW TO ADD YOUR DESIGNS:
+      Inside each .di div, replace the .di-placeholder div with:
+        <img class="di-img" src="your-design.jpg" alt="Title">
+      To add more items, duplicate a .di div anywhere in the grid.
+      The grid auto-handles sizing.
+      =====================================================
+      -->
+      <div class="dg-grid">
+
+        <div class="di rv" style="transition-delay:.04s">
+          <div class="di-placeholder" style="background:linear-gradient(135deg,#0d0d0d,#1a0800)">
+            <div class="di-ph-icon" style="color:#d4ff00">&#9889;</div>
+            <div class="di-ph-name" style="color:#d4ff00">INCRIDEA '26</div>
+            <div class="di-ph-sub">Tech Fest Poster</div>
+          </div>
+          <div class="di-ov">
+            <div class="di-ov-title">TECH FEST POSTER</div>
+            <div class="di-ov-sub">Incridea '26 · Main visual</div>
+          </div>
+        </div>
+
+        <div class="di rv" style="transition-delay:.08s">
+          <div class="di-placeholder" style="background:linear-gradient(135deg,#0a0010,#100020)">
+            <div class="di-ph-icon" style="color:#bf00ff">?</div>
+            <div class="di-ph-name" style="color:#bf00ff">QUIZ NIGHT</div>
+            <div class="di-ph-sub">Grey Matter QDC</div>
+          </div>
+          <div class="di-ov">
+            <div class="di-ov-title">QUIZ NIGHT FLYER</div>
+            <div class="di-ov-sub">Grey Matter QDC</div>
+          </div>
+        </div>
+
+        <div class="di rv" style="transition-delay:.12s">
+          <div class="di-placeholder" style="background:linear-gradient(135deg,#150000,#0a0a0a)">
+            <div class="di-ph-icon" style="color:#ff0040">&#128225;</div>
+            <div class="di-ph-name" style="color:#ff0040">SOCIAL</div>
+            <div class="di-ph-sub">Multi-platform campaign</div>
+          </div>
+          <div class="di-ov">
+            <div class="di-ov-title">SOCIAL CAMPAIGN</div>
+            <div class="di-ov-sub">Multi-platform outreach</div>
+          </div>
+        </div>
+
+        <div class="di rv" style="transition-delay:.16s">
+          <div class="di-placeholder" style="background:linear-gradient(135deg,#001510,#0a0a0a)">
+            <div class="di-ph-icon" style="color:#00ffea">&#127918;</div>
+            <div class="di-ph-name" style="color:#00ffea">SIDE EVENT</div>
+            <div class="di-ph-sub">Incridea '26</div>
+          </div>
+          <div class="di-ov">
+            <div class="di-ov-title">SIDE EVENT KIT</div>
+            <div class="di-ov-sub">Incridea '26 sub-track</div>
+          </div>
+        </div>
+
+        <div class="di rv" style="transition-delay:.2s">
+          <div class="di-placeholder" style="background:linear-gradient(135deg,#120010,#0a0a0a)">
+            <div class="di-ph-icon" style="color:#ff00aa">&#11041;</div>
+            <div class="di-ph-name" style="color:#ff00aa">BRAND ID</div>
+            <div class="di-ph-sub">Club identity system</div>
+          </div>
+          <div class="di-ov">
+            <div class="di-ov-title">CLUB IDENTITY</div>
+            <div class="di-ov-sub">Brand system</div>
+          </div>
+        </div>
+
+        <div class="di rv" style="transition-delay:.24s">
+          <div class="di-placeholder" style="background:linear-gradient(135deg,#100800,#0a0a0a)">
+            <div class="di-ph-icon" style="color:#ff6200">&#128293;</div>
+            <div class="di-ph-name" style="color:#ff6200">OUTREACH</div>
+            <div class="di-ph-sub">Inter-college graphics</div>
+          </div>
+          <div class="di-ov">
+            <div class="di-ov-title">OUTREACH PACK</div>
+            <div class="di-ov-sub">Inter-college campaign</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- S4: SPEAKING & HOSTING -->
+  <section class="snap-sec" id="s4">
+    <div class="sec-hdr">
+      <div class="sec-num">05</div>
+      <div class="sec-title rv sl">SPEAKING <em>&amp; HOSTING</em></div>
+    </div>
+    <div class="sec-body">
+      <div style="background:rgba(0,255,234,.06);border-left:4px solid var(--cyan);padding:8px 14px;margin-bottom:12px">
+        <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(0,255,234,.5);text-transform:uppercase">Public speaking &nbsp;&#183;&nbsp; Event hosting &nbsp;&#183;&nbsp; Quiz mastering &nbsp;&#183;&nbsp; Stage presence</span>
+      </div>
+      <div class="speak-grid">
+
+        <div class="speak-card rv" data-icon="&#127908;" style="transition-delay:.05s">
+          <div class="speak-type">Quiz Master</div>
+          <div class="speak-title">GREY MATTER QDC QUIZ NIGHTS</div>
+          <div class="speak-meta">Grey Matter QDC &nbsp;&#183;&nbsp; NMAM Institute &nbsp;&#183;&nbsp; Ongoing</div>
+          <div class="speak-desc">Hosted multiple intra-college quiz nights as Quiz Master for the Grey Matter Quiz & Drama Club. Wrote questions, managed rounds, kept audience energy high, and handled live judging.</div>
+          <div class="speak-tags"><span class="speak-tag">Quiz Master</span><span class="speak-tag">Audience Mgmt</span><span class="speak-tag">Live Judging</span></div>
+        </div>
+
+        <div class="speak-card rv" data-icon="&#127881;" style="transition-delay:.1s">
+          <div class="speak-type">Event Co-Host</div>
+          <div class="speak-title">INCRIDEA '26 SIDE EVENTS</div>
+          <div class="speak-meta">Incridea '26 Tech Fest &nbsp;&#183;&nbsp; NMAM Institute &nbsp;&#183;&nbsp; 2026</div>
+          <div class="speak-desc">Co-hosted side events at the annual inter-college tech fest Incridea '26. Coordinated event flow on stage, introduced participants, managed transitions between segments, and engaged a large inter-college audience.</div>
+          <div class="speak-tags"><span class="speak-tag">Co-Host</span><span class="speak-tag">Stage Mgmt</span><span class="speak-tag">Inter-college</span></div>
+        </div>
+
+        <!--
+        ============================================================
+        SPEAKING ENTRY TEMPLATE — copy and paste to add more events:
+
+        <div class="speak-card rv" data-icon="&#127908;">
+          <div class="speak-type">[ TYPE: Talk / Panel / Workshop / Host ]</div>
+          <div class="speak-title">EVENT / TALK TITLE</div>
+          <div class="speak-meta">Organizer &nbsp;&#183;&nbsp; Venue &nbsp;&#183;&nbsp; Date</div>
+          <div class="speak-desc">Describe what you did, the audience size, topic covered, and impact.</div>
+          <div class="speak-tags">
+            <span class="speak-tag">Tag 1</span>
+            <span class="speak-tag">Tag 2</span>
+          </div>
+        </div>
+        ============================================================
+        -->
+
+        <div class="speak-add-placeholder rv" style="transition-delay:.15s">
+          <div class="sap-icon">+</div>
+          <div class="sap-label">ADD YOUR NEXT<br>SPEAKING EVENT<br><br><span style="font-size:8px;opacity:.4">copy template from HTML comment</span></div>
+        </div>
+
+        <div class="speak-add-placeholder rv" style="transition-delay:.2s">
+          <div class="sap-icon">+</div>
+          <div class="sap-label">WORKSHOP /<br>PANEL / TALK<br><br><span style="font-size:8px;opacity:.4">copy template from HTML comment</span></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- S5: ABOUT -->
+  <section class="snap-sec" id="s5">
+    <div class="sec-hdr">
+      <div class="sec-num">06</div>
+      <div class="sec-title rv sl">PLAYER <em>STATS</em></div>
+    </div>
+    <div class="sec-body" style="padding:3px">
+      <div class="asplit">
+        <div class="aleft">
+          <div class="statg rv">
+            <div class="stc"><span class="stbig">2028</span><span class="stsm">Graduation</span></div>
+            <div class="stc"><span class="stbig">CTF</span><span class="stsm">Active</span></div>
+            <div class="stc"><span class="stbig">4+</span><span class="stsm">Certs</span></div>
+            <div class="stc"><span class="stbig">&#8734;</span><span class="stsm">Curiosity</span></div>
+          </div>
+          <div style="height:3px;background:rgba(245,240,232,.08);margin:3px 0"></div>
+          <div class="term rv" style="transition-delay:.1s">
+            <div><span class="p">C:\SARVASVA&gt;</span> whoami</div>
+            <div class="o">&rarr; CS Undergrad @ NMAM Institute of Technology, Nitte</div>
+            <div class="o">&rarr; Cybersec + Full-Stack + AI + Designer + Quiz Host</div>
+            <div><span class="p">C:\SARVASVA&gt;</span> cat mission.txt</div>
+            <div class="o">&rarr; Break things ethically. Build things that matter.</div>
+            <div><span class="p">C:\SARVASVA&gt;</span> ls ./clubs/</div>
+            <div class="o">&rarr; Grey Matter QDC (Design + Quiz) &nbsp;&#183;&nbsp; Incridea '26 (Publicity)</div>
+          </div>
+          <div class="term rv" style="transition-delay:.15s">
+            <div><span class="p">C:\SARVASVA&gt;</span> cat experience.txt</div>
+            <div class="o">&rarr; Software Dev Intern — AIC NITTE Incubation Center</div>
+            <div class="o">&rarr; Jun–Aug 2024 · Hardware + Arduino + Prompt Engineering</div>
+          </div>
+        </div>
+        <div class="aright">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:4px;color:rgba(245,240,232,.28);margin-bottom:10px">ACHIEVEMENTS UNLOCKED</div>
+          <div class="certs rv">
+            <div class="cert">Google: Cybersecurity Foundations</div>
+            <div class="cert">TryHackMe: Cybersecurity 101</div>
+            <div class="cert">ZSecurity: Ethical Hacking From Scratch</div>
+            <div class="cert">Unreal Engine Blueprint Developer</div>
+          </div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:4px;color:rgba(245,240,232,.28);margin:11px 0 9px">OPEN TO COLLABORATE</div>
+          <div class="cbtns rv" style="transition-delay:.12s">
+            <a href="mailto:sarvasva5758@gmail.com" class="cbtn">&#9993; &nbsp;sarvasva5758@gmail.com<span class="arr">&rarr;</span></a>
+            <a href="https://linkedin.com/in/sarvasva-s-4470562b4" class="cbtn" target="_blank" rel="noopener">&#9672; &nbsp;LinkedIn<span class="arr">&rarr;</span></a>
+            <a href="https://github.com/scrxtch12418" class="cbtn" target="_blank" rel="noopener">&#8997; &nbsp;GitHub / scrxtch12418<span class="arr">&rarr;</span></a>
+            <a href="tel:+918618971296" class="cbtn">&#9742; &nbsp;+91 861 897 1296<span class="arr">&rarr;</span></a>
+          </div>
+          <div style="margin-top:14px;background:rgba(255,0,64,.07);border-left:4px solid var(--hot);padding:9px 12px">
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;color:rgba(245,240,232,.45);line-height:1.6">"To live is to risk it all, Morty. Otherwise you're just an inert chunk of matter."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S6: QUIZ -->
+  <section class="snap-sec" id="s6">
+    <div class="sec-hdr">
+      <div class="sec-num">07</div>
+      <div class="sec-title rv sl">QUIZ <em>ARENA</em></div>
+    </div>
+    <div class="qwrap">
+      <div id="qgame">
+        <div class="qmeta">
+          <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(245,240,232,.3)">CAN YOU BEAT THE QUIZ MASTER?</div>
+          <div class="qscore">SCORE: <span id="sv">0</span>/<span id="st">8</span></div>
+        </div>
+        <div class="qpips" id="qpips"></div>
+        <div style="height:13px"></div>
+        <div class="qtxt" id="qtxt"></div>
+        <div class="qopts" id="qopts"></div>
+        <div class="qfb" id="qfb"></div>
+        <button class="qnxt" id="qnxt" onclick="nextQ()">NEXT QUESTION &rarr;</button>
+      </div>
+      <div class="qres" id="qres">
+        <span class="rlabel">FINAL SCORE</span>
+        <span class="rscore" id="rsc">0</span>
+        <div class="rmsg" id="rmsg"></div>
+        <button class="rbtn" onclick="initQ()">&#8617; PLAY AGAIN</button>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /scroller -->
+
+<script>
+/* CURSOR */
+var cD=document.getElementById('cDot'),cR=document.getElementById('cRing');
+var mx=0,my=0,rx=0,ry=0;
+var TC=['#ff0040','#d4ff00','#00ffea','#bf00ff','#ff6200','#ff00aa'];
+document.addEventListener('mousemove',function(e){
+  mx=e.clientX;my=e.clientY;
+  cD.style.left=mx+'px';cD.style.top=my+'px';
+  if(Math.random()<0.22){
+    var t=document.createElement('div');t.className='pxt';
+    var sz=(Math.random()*5+3)+'px';
+    t.style.cssText='left:'+(mx+Math.random()*14-7)+'px;top:'+(my+Math.random()*14-7)+'px;background:'+TC[0|Math.random()*TC.length]+';width:'+sz+';height:'+sz;
+    document.body.appendChild(t);
+    setTimeout(function(){t.parentNode&&t.remove()},700);
+  }
+});
+setInterval(function(){rx+=(mx-rx)*.18;ry+=(my-ry)*.18;cR.style.left=rx+'px';cR.style.top=ry+'px';},14);
+
+/* NOISE */
+var nc=document.getElementById('noiseCanvas');
+nc.width=400;nc.height=300;
+var nctx=nc.getContext('2d');
+function drawNoise(){
+  var id=nctx.createImageData(400,300),d=id.data;
+  for(var i=0;i<d.length;i+=4){var v=Math.random()*255|0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}
+  nctx.putImageData(id,0,0);
+}
+setInterval(drawNoise,40);drawNoise();
+
+/* FLICKER */
+var fl=document.getElementById('flickerEl');
+setInterval(function(){
+  if(Math.random()<0.04){
+    fl.style.background='rgba(255,255,255,0.04)';
+    setTimeout(function(){fl.style.background='rgba(255,255,255,0)'},50+Math.random()*80);
+  }
+},200);
+
+/* CLOCK */
+function tc(){
+  var n=new Date(),el=document.getElementById('clk');
+  if(el)el.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(function(v){return String(v).padStart(2,'0')}).join(':');
+}
+setInterval(tc,1000);tc();
+
+/* TAG BOUNCE */
+function bTag(el){el.style.transform='scale(1.28) rotate(-4deg)';el.style.boxShadow='0 0 20px var(--hot)';setTimeout(function(){el.style.transform='';el.style.boxShadow=''},280);}
+
+/* SECTION NAV */
+var scr=document.getElementById('scroller');
+var secs=['s0','s1','s2','s3','s4','s5','s6'];
+var curSec=-1;
+
+function goSec(i){
+  var el=document.getElementById(secs[i]);
+  if(el)el.scrollIntoView({behavior:'smooth'});
+}
+
+function setActive(btn){
+  document.querySelectorAll('.nsb').forEach(function(b){b.classList.remove('active')});
+  btn.classList.add('active');
+}
+
+function updateNav(i){
+  if(i===curSec)return;
+  curSec=i;
+  document.querySelectorAll('.ndot').forEach(function(d,j){d.classList.toggle('active',j===i)});
+  document.querySelectorAll('.nsb').forEach(function(b,j){b.classList.toggle('active',j===i)});
+  triggerReveal(secs[i]);
+  if(i===1)animateBars();
+  if(i===6&&!qStarted)initQ();
+}
+
+scr.addEventListener('scroll',function(){
+  var sh=scr.clientHeight;
+  var sr=scr.getBoundingClientRect();
+  secs.forEach(function(id,i){
+    var el=document.getElementById(id);if(!el)return;
+    var top=el.getBoundingClientRect().top-sr.top;
+    if(top>-sh*0.5&&top<sh*0.5)updateNav(i);
+  });
+},{passive:true});
+
+/* REVEAL */
+function triggerReveal(secId){
+  var sec=document.getElementById(secId);if(!sec)return;
+  sec.querySelectorAll('.rv').forEach(function(el,i){
+    setTimeout(function(){el.classList.add('in')},i*65+90);
+  });
+}
+setTimeout(function(){triggerReveal('s0')},160);
+
+/* SKILL BARS */
+function animateBars(){
+  setTimeout(function(){
+    document.querySelectorAll('#s1 .sr-fill').forEach(function(b){b.style.width=b.dataset.w+'%'});
+  },320);
+}
+
+/* KONAMI */
+var kseq=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'],ki=0;
+document.addEventListener('keydown',function(e){
+  ki=e.code===kseq[ki]?ki+1:0;
+  if(ki===kseq.length){document.getElementById('konami').classList.add('show');ki=0;}
+});
+
+/* QUIZ */
+var qs=[
+  {q:"Which tool is the go-to for network scanning and reconnaissance?",opts:["Metasploit","Nmap","Burp Suite","Hydra"],ans:1,exp:"Nmap is the recon workhorse of every pentest."},
+  {q:"What does RAT stand for in cybersecurity?",opts:["Remote Access Trojan","Random Attack Tool","Rapid Auth Token","Reverse App Testing"],ans:0,exp:"Remote Access Trojan — a stealthy backdoor for persistent remote control."},
+  {q:"Which HTTP method is most exploited in CSRF attacks?",opts:["GET","POST","DELETE","OPTIONS"],ans:1,exp:"POST requests carry state-changing actions — CSRF forges them on behalf of victims."},
+  {q:"What is prompt injection in LLM security?",opts:["Overloading GPU memory","Injecting malicious instructions via user input","SQL injection for AI","Buffer overflow in NLP"],ans:1,exp:"Prompt injection tricks an LLM into following attacker-controlled instructions."},
+  {q:"Which Rick & Morty character would be the best pentester?",opts:["Jerry (too scared)","Bird Person (no hands)","Rick Sanchez (galaxy-brain)","Mr. Meeseeks (LOOK AT ME)"],ans:2,exp:"Obviously Rick. He once hacked the Galactic Federation with a butter robot."},
+  {q:"In CTF, the 'pwn' category typically involves what?",opts:["Web vulnerabilities","Binary exploitation","Crypto puzzles","Network forensics"],ans:1,exp:"Pwn = binary exploitation — stack overflows, ROP chains, the real fun stuff."},
+  {q:"Which framework powers Sarvasva's AI Sales Agent backend?",opts:["Django","Flask","FastAPI","Express.js"],ans:2,exp:"FastAPI — async Python with auto-generated docs and real Outlook + Zoho integrations."},
+  {q:"What does OWASP stand for?",opts:["Open Web Application Security Project","Official Web Audit Security Protocol","Open Worldwide Access Security Platform","Online Web Attack Simulation Protocol"],ans:0,exp:"Open Web Application Security Project — the bible of web security."},
+];
+var qC=0,qSc=0,qAns=[],qStarted=false;
+
+function initQ(){
+  qC=0;qSc=0;qAns=[];qStarted=true;
+  document.getElementById('qgame').style.display='block';
+  document.getElementById('qres').style.display='none';
+  var pips=document.getElementById('qpips');pips.innerHTML='';
+  qs.forEach(function(_,i){var d=document.createElement('div');d.className='pip';d.id='p'+i;pips.appendChild(d);});
+  renderQ();
+}
+
+function renderQ(){
+  var q=qs[qC];
+  document.getElementById('qtxt').textContent=(qC+1)+'. '+q.q;
+  document.getElementById('qfb').textContent='';document.getElementById('qfb').style.color='';
+  document.getElementById('qnxt').style.display='none';
+  document.getElementById('sv').textContent=qSc;
+  for(var i=0;i<qs.length;i++){
+    var p=document.getElementById('p'+i);if(!p)continue;
+    p.className='pip'+(i<qC?(qAns[i]?' c':' w'):i===qC?' cur':'');
+  }
+  var L=['A','B','C','D'],opts=document.getElementById('qopts');opts.innerHTML='';
+  q.opts.forEach(function(o,i){
+    var b=document.createElement('button');b.className='qopt';b.setAttribute('data-l',L[i]);b.textContent=o;
+    b.addEventListener('click',function(){selA(i,this)});opts.appendChild(b);
+  });
+}
+
+function selA(idx,btn){
+  var q=qs[qC];
+  document.querySelectorAll('.qopt').forEach(function(b){b.disabled=true});
+  var fb=document.getElementById('qfb');
+  if(idx===q.ans){btn.classList.add('c');qSc++;qAns.push(true);fb.textContent='✔ CORRECT! '+q.exp;fb.style.color='var(--acid)';}
+  else{btn.classList.add('w');document.querySelectorAll('.qopt')[q.ans].classList.add('c');qAns.push(false);fb.textContent='✘ NOPE! '+q.exp;fb.style.color='var(--hot)';}
+  document.getElementById('sv').textContent=qSc;
+  if(qC<qs.length-1)document.getElementById('qnxt').style.display='block';
+  else setTimeout(showRes,1300);
+}
+
+function nextQ(){qC++;renderQ();}
+
+function showRes(){
+  document.getElementById('qgame').style.display='none';
+  document.getElementById('qres').style.display='block';
+  document.getElementById('rsc').textContent=qSc+'/'+qs.length;
+  var msgs=[[0,2,'GAME OVER.\nRick is disappointed.\nBut hey, you tried.'],[3,4,'NOT BAD.\nYou\'re a Morty in training.'],[5,6,'SOLID.\nRick Sanchez energy detected.'],[7,7,'IMPRESSIVE.\nLegendary dev unlocked.'],[8,8,'PERFECT SCORE.\nWUBBA LUBBA DUB DUB.']];
+  var msg=msgs[0][2];msgs.forEach(function(m){if(qSc>=m[0]&&qSc<=m[1])msg=m[2];});
+  document.getElementById('rmsg').textContent=msg;
+}
+</script>
+</body>
+</html>

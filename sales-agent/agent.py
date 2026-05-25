@@ -1,5 +1,7 @@
 import json
+from typing import Any, cast
 from openai import OpenAI
+from openai import APIConnectionError
 from tools.registry import TOOLS
 from tools.functions import run_tool
 
@@ -24,15 +26,23 @@ def _parse_tool_arguments(raw_arguments: str) -> dict:
     return parsed if isinstance(parsed, dict) else {}
 
 def run_agent(messages: list, max_iterations: int = 5) -> str:
-    conversation = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+    conversation: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
 
     for i in range(max_iterations):
-        response = client.chat.completions.create(
-            model="qwen3-sales",
-            messages=conversation,
-            tools=TOOLS,
-            tool_choice="auto"
-        )
+        try:
+            response = client.chat.completions.create(
+                model="qwen3-sales",
+                messages=cast(Any, conversation),
+                tools=cast(Any, TOOLS),
+                tool_choice="auto"
+            )
+        except APIConnectionError:
+            return (
+                "I cannot reach the local LLM service at http://localhost:11434. "
+                "Start Ollama and make sure the qwen3-sales model is available."
+            )
+        except Exception as exc:
+            return f"I hit an unexpected model error: {exc}"
 
         message = response.choices[0].message
 
@@ -54,11 +64,15 @@ def run_agent(messages: list, max_iterations: int = 5) -> str:
                     }
                 }
                 for tc in message.tool_calls
+                if tc.type == "function"
             ]
         })
 
         # Run each tool and append results
         for tc in message.tool_calls:
+            if tc.type != "function":
+                continue
+
             name = tc.function.name
             args = _parse_tool_arguments(tc.function.arguments)
             print(f"[agent] tool call: {name}({args})")

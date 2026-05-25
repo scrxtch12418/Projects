@@ -1,0 +1,1652 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --ink: #0d0d0d;
+  --paper: #f2ede6;
+  --hot: #ff2d55;
+  --acid: #c8ff00;
+  --cyan: #00e5ff;
+  --purple: #9b00ff;
+  --orange: #ff6a00;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { 
+  scroll-behavior: smooth; 
+  scroll-snap-type: y mandatory;
+}
+
+body {
+  background-color: var(--ink);
+  color: var(--paper);
+  font-family: 'Space Mono', monospace;
+  cursor: crosshair;
+  overflow-x: hidden;
+}
+
+.screen {
+  position: relative;
+  z-index: 1;
+  transform: translateZ(0);
+}
+.screen-filter { display: none; }
+
+.crt-noise,
+.crt-scan,
+.crt-glow,
+.crt-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+}
+.crt-noise {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.4'/></svg>");
+  mix-blend-mode: soft-light;
+  opacity: 0.2;
+  animation: noiseShift 0.35s steps(2);
+}
+.crt-scan {
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.03), rgba(255,255,255,0.03) 1px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+  mix-blend-mode: overlay;
+  opacity: 0.45;
+  filter: blur(0.35px);
+  animation: scanMove 7s linear infinite;
+}
+.crt-glow {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(0,229,255,0.15), transparent 40%),
+    radial-gradient(circle at 80% 28%, rgba(255,45,85,0.16), transparent 45%),
+    radial-gradient(circle at 35% 85%, rgba(200,255,0,0.12), transparent 50%);
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  animation: glowShift 9s ease-in-out infinite;
+}
+.crt-vignette {
+  background: radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.85) 100%);
+  opacity: 0.9;
+}
+@keyframes scanMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 -220px; }
+}
+@keyframes glowShift {
+  0% { background-position: 0 0, 0 0, 0 0; }
+  50% { background-position: -40px 20px, 30px -10px, -20px 30px; }
+  100% { background-position: 0 0, 0 0, 0 0; }
+}
+@keyframes noiseShift {
+  0% { background-position: 0 0; }
+  100% { background-position: -20px 10px; }
+}
+
+/* CUSTOM CURSOR */
+.cur-dot, .cur-ring {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99999;
+  transform: translate(-50%,-50%);
+  transition: none;
+}
+.cur-dot { width: 6px; height: 6px; background: var(--hot); }
+.cur-ring { width: 24px; height: 24px; border: 2px solid var(--hot); transition: all 0.1s linear; }
+
+/* PIXEL TRAIL */
+.pxt {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9991;
+  animation: pxfly 0.7s ease-out forwards;
+}
+@keyframes pxfly {
+  from { opacity: 1; transform: translateY(0) rotate(0); }
+  to { opacity: 0; transform: translateY(-60px) rotate(180deg); }
+}
+
+/* ═══════════ TICKER ═══════════ */
+.ticker {
+  background: var(--cyan);
+  color: var(--ink);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 15px;
+  letter-spacing: 3px;
+  padding: 6px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 3px solid var(--ink);
+  transform: rotate(1deg);
+  margin: -10px -10px 10px -10px;
+  width: 105%;
+}
+.ticker-inner {
+  display: inline-block;
+  animation: tick 28s linear infinite;
+}
+@keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ═══════════ SIDE TRACKER ═══════════ */
+.side-track {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 1001;
+}
+.track-dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(242,237,230,0.3);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+.track-dot::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: 'Space Mono', monospace;
+  white-space: nowrap;
+  letter-spacing: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(242,237,230,0.2);
+}
+.track-dot:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+.track-dot.active {
+  background: var(--hot);
+  border-color: var(--hot);
+  box-shadow: 0 0 12px rgba(255,45,85,0.6);
+  transform: scale(1.3);
+}
+
+/* ═══════════ NAV ═══════════ */
+.nav {
+  display: flex;
+  gap: 0;
+  background: var(--ink);
+  border-bottom: 3px solid var(--paper);
+  position: sticky;
+  top: 33px;
+  z-index: 999;
+  overflow-x: auto;
+}
+.nav-btn {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 3px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-right: 2px solid rgba(242,237,230,0.2);
+  color: rgba(242,237,230,0.4);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.nav-btn:hover, .nav-btn.active {
+  background: var(--hot);
+  color: var(--ink);
+  color: #000;
+}
+
+/* ═══════════ SECTIONS ═══════════ */
+.section {
+  display: block;
+  min-height: 100vh;
+  scroll-snap-align: start;
+  scroll-margin-top: 96px;
+}
+
+/* ═══════════ SCROLL REVEAL ═══════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.slide-left {
+  transform: translateX(-50px);
+}
+.reveal.slide-right {
+  transform: translateX(50px);
+}
+.reveal.scale-in {
+  transform: scale(0.88);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ═══════════ HERO ═══════════ */
+#s-home {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: calc(100vh - 100px);
+}
+.hero-left {
+  background: var(--ink);
+  padding: 40px 36px;
+  border-right: 4px solid var(--paper);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset -10px -10px 0 rgba(200,255,0,0.1);
+}
+.hero-left::before {
+  content: 'S';
+  position: absolute;
+  right: -20px;
+  bottom: -60px;
+  font-family: 'Bebas Neue';
+  font-size: 300px;
+  color: var(--hot);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  line-height: 1;
+  z-index: 0;
+}
+.name-block h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(64px, 10vw, 110px);
+  line-height: 0.9;
+  color: var(--paper);
+  letter-spacing: 2px;
+}
+.name-block h1 em {
+  font-style: normal;
+  color: var(--hot);
+  -webkit-text-stroke: 0px;
+  display: block;
+}
+.name-block h1 .outline {
+  -webkit-text-stroke: 2px var(--paper);
+  color: transparent;
+}
+.name-subline {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--acid);
+  margin-top: 16px;
+  text-transform: uppercase;
+}
+
+/* PHOTO SLOT */
+.photo-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+}
+.photo-frame {
+  width: 120px;
+  height: 120px;
+  border: 3px solid var(--paper);
+  background: rgba(242,237,230,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: rgba(242,237,230,0.6);
+}
+.photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.photo-caption {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(242,237,230,0.4);
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 28px;
+}
+.tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 5px 12px;
+  border: 2px solid;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.tag:nth-child(3n+1) { border-color: var(--hot); color: var(--hot); }
+.tag:nth-child(3n+2) { border-color: var(--acid); color: var(--acid); }
+.tag:nth-child(3n) { border-color: var(--cyan); color: var(--cyan); }
+.tag:hover { background: var(--hot); color: var(--ink); border-color: var(--hot); }
+
+.hero-stats {
+  display: flex;
+  gap: 0;
+  border-top: 3px solid rgba(242,237,230,0.2);
+  margin-top: 32px;
+  padding-top: 20px;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+  border-right: 2px solid rgba(242,237,230,0.15);
+  padding: 0 12px;
+}
+.stat:last-child { border-right: none; }
+.stat-n {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: var(--acid);
+  display: block;
+  line-height: 1;
+}
+.stat-l {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(242,237,230,0.4);
+  text-transform: uppercase;
+}
+
+/* HERO RIGHT — brutalist collage */
+.hero-right {
+  background: var(--paper);
+  color: var(--ink);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.hero-right::before {
+  content: 'C-137';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 11px;
+  letter-spacing: 5px;
+  color: rgba(13,13,13,0.3);
+}
+.hero-poster {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.poster-inner {
+  width: 100%;
+  text-align: center;
+  position: relative;
+}
+.poster-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 8vw, 80px);
+  color: var(--ink);
+  line-height: 0.85;
+  letter-spacing: 2px;
+}
+.poster-accent {
+  display: inline-block;
+  background: var(--ink);
+  color: var(--cyan);
+  padding: 2px 16px;
+  margin: 8px 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(48px, 8vw, 80px);
+  letter-spacing: 2px;
+  transform: rotate(-4deg) scale(1.1);
+  box-shadow: 4px 4px 0 var(--acid);
+}
+.poster-sub {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--paper);
+  text-transform: uppercase;
+  margin-top: 20px;
+  background: var(--ink);
+  padding: 4px 8px;
+  display: inline-block;
+}
+.halftone-bar {
+  width: 100%;
+  height: 60px;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  position: relative;
+  z-index: 2;
+}
+.halftone-bar span {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: rgba(242,237,230,0.5);
+  letter-spacing: 2px;
+}
+.hp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hp-label { font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: var(--hot); }
+.hp-track {
+  width: 120px; height: 8px;
+  background: rgba(242,237,230,0.1);
+  border: 1px solid rgba(242,237,230,0.3);
+}
+.hp-fill {
+  height: 100%;
+  width: 94%;
+  background: var(--hot);
+}
+
+/* ═══════════ SECTION CHROME ═══════════ */
+.sec-hdr {
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 4px solid var(--paper);
+  padding: 32px 36px 20px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.sec-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 80px;
+  line-height: 1;
+  color: var(--hot);
+  opacity: 0.3;
+  flex-shrink: 0;
+}
+.sec-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: 4px;
+  flex: 1;
+}
+.sec-title em {
+  font-style: normal;
+  -webkit-text-stroke: 2px var(--paper);
+  color: transparent;
+}
+.sec-body { padding: 36px; }
+
+/* ═══════════ SKILLS ═══════════ */
+.skill-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: var(--paper);
+  border: 3px solid var(--paper);
+}
+.skill-cat {
+  background: var(--ink);
+  padding: 24px;
+  border: 3px solid transparent;
+  transition: transform 0.1s, background 0.1s, box-shadow 0.1s, border-color 0.1s;
+}
+.skill-cat:hover {
+  background: var(--paper);
+  border-color: var(--hot);
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0 var(--hot);
+  z-index: 10;
+}
+.skill-cat:hover * {
+  color: var(--ink) !important;
+  border-color: var(--ink) !important;
+}
+.skill-cat:hover .skill-track { border-color: var(--ink) !important; background: rgba(0,0,0,0.1) !important; }
+.skill-cat-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.skill-cat-title::before {
+  content: '';
+  display: block;
+  width: 12px;
+  height: 12px;
+  background: var(--hot);
+  flex-shrink: 0;
+}
+.skill-cat:nth-child(2) .skill-cat-title::before { background: var(--acid); }
+.skill-cat:nth-child(3) .skill-cat-title::before { background: var(--cyan); }
+.skill-cat:nth-child(4) .skill-cat-title::before { background: var(--purple); }
+
+.skill-row { margin-bottom: 12px; }
+.skill-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+.skill-label span { color: rgba(242,237,230,0.4); }
+.skill-track {
+  height: 4px;
+  background: rgba(242,237,230,0.1);
+  position: relative;
+}
+.skill-fill {
+  height: 100%;
+  background: var(--hot);
+  width: 0;
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+}
+.skill-cat:nth-child(2) .skill-fill { background: var(--acid); }
+.skill-cat:nth-child(3) .skill-fill { background: var(--cyan); }
+.skill-cat:nth-child(4) .skill-fill { background: var(--purple); }
+
+.badge-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 4px 8px;
+  border: 1px solid rgba(242,237,230,0.3);
+  color: rgba(242,237,230,0.6);
+  text-transform: uppercase;
+}
+
+/* ═══════════ PROJECTS ═══════════ */
+.proj-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3px;
+  background: var(--paper);
+  border: 3px solid var(--paper);
+}
+.proj-card {
+  background: var(--ink);
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: transform 0.1s, background 0.1s, box-shadow 0.1s, border-color 0.1s;
+}
+.proj-card::before {
+  content: attr(data-num);
+  position: absolute;
+  right: 16px;
+  bottom: -20px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 100px;
+  color: rgba(255,255,255,0.04);
+  line-height: 1;
+}
+.proj-card:hover { 
+  background: var(--cyan); 
+  border-color: var(--ink);
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0 var(--ink);
+  z-index: 10;
+}
+.proj-card:hover * { color: var(--ink) !important; border-color: var(--ink) !important; }
+.proj-card:hover::before { color: rgba(0,0,0,0.1) !important; border-color: transparent !important; }
+.proj-rarity {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+.proj-rarity.epic { color: var(--purple); }
+.proj-rarity.rare { color: var(--cyan); }
+.proj-rarity.uncommon { color: var(--acid); }
+.proj-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 2px;
+  line-height: 1.1;
+  margin-bottom: 14px;
+  color: var(--paper);
+}
+.proj-desc {
+  font-size: 11px;
+  line-height: 1.7;
+  color: rgba(242,237,230,0.6);
+  margin-bottom: 16px;
+}
+.proj-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.ptag {
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 6px;
+  border: 1px solid rgba(242,237,230,0.2);
+  color: rgba(242,237,230,0.4);
+  text-transform: uppercase;
+}
+
+/* ═══════════ DESIGN VAULT ═══════════ */
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  background: var(--paper);
+  border: 3px solid var(--paper);
+}
+.design-item {
+  background: var(--ink);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transform-origin: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.design-item:hover {
+  transform: scale(1.04);
+  z-index: 4;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+}
+.design-media {
+  aspect-ratio: 4 / 5;
+  border: 2px solid rgba(242,237,230,0.2);
+  background: #101010;
+  overflow: hidden;
+}
+.design-media > * {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+.design-item:hover .design-media > * { transform: scale(1.05); }
+.design-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 4px;
+  color: rgba(242,237,230,0.5);
+  background: linear-gradient(135deg, #0d0d0d, #1a0a00, #0d0d0d);
+}
+.design-caption {
+  margin-top: 14px;
+}
+.design-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: var(--paper);
+}
+.design-meta {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(242,237,230,0.6);
+  margin-top: 6px;
+}
+.design-note {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: rgba(242,237,230,0.4);
+  text-transform: uppercase;
+  margin-top: 12px;
+}
+
+/* ═══════════ SPEAKING / HOSTING ═══════════ */
+.exp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  background: var(--paper);
+  border: 3px solid var(--paper);
+}
+.exp-card {
+  background: var(--ink);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid transparent;
+  transition: transform 0.1s, background 0.1s, box-shadow 0.1s, border-color 0.1s;
+}
+.exp-card:hover { 
+  background: var(--paper); 
+  border-color: var(--hot);
+  transform: translate(-4px, -4px);
+  box-shadow: 8px 8px 0 var(--hot);
+  z-index: 10;
+}
+.exp-card:hover * { color: var(--ink) !important; border-color: var(--ink) !important; }
+.exp-card:hover::before { color: rgba(0,0,0,0.1) !important; border-color: transparent !important; }
+.exp-card::before {
+  content: attr(data-num);
+  position: absolute;
+  right: 16px;
+  bottom: -20px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 90px;
+  color: rgba(255,255,255,0.04);
+  line-height: 1;
+}
+.exp-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+}
+.exp-meta {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(242,237,230,0.5);
+  margin-bottom: 12px;
+}
+.exp-desc {
+  font-size: 12px;
+  line-height: 1.7;
+  color: rgba(242,237,230,0.7);
+  margin-bottom: 12px;
+}
+.exp-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.exp-tag {
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 3px 6px;
+  border: 1px solid rgba(242,237,230,0.2);
+  color: rgba(242,237,230,0.5);
+  text-transform: uppercase;
+}
+
+/* ═══════════ ABOUT ═══════════ */
+.about-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: var(--paper);
+  border: 3px solid var(--paper);
+}
+.about-left { background: var(--ink); padding: 32px; }
+.about-right { background: #0d0d0d; padding: 32px; }
+.term {
+  background: #000;
+  border: 2px solid rgba(242,237,230,0.15);
+  padding: 20px;
+  font-size: 12px;
+  line-height: 2;
+  margin-bottom: 20px;
+}
+.term .prompt { color: var(--cyan); }
+.term .out { color: rgba(242,237,230,0.6); }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; background: var(--paper); margin-bottom: 3px; }
+.stat-cell {
+  background: var(--ink);
+  padding: 20px;
+  text-align: center;
+}
+.stat-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 44px;
+  color: var(--acid);
+  display: block;
+  line-height: 1;
+}
+.stat-sm {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(242,237,230,0.4);
+  text-transform: uppercase;
+  margin-top: 4px;
+  display: block;
+}
+
+.certs { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+.cert-item {
+  background: rgba(200,255,0,0.06);
+  border-left: 3px solid var(--acid);
+  padding: 10px 14px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--acid);
+  text-transform: uppercase;
+}
+
+.contact-btns { display: flex; flex-direction: column; gap: 3px; }
+.contact-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: transparent;
+  border: 2px solid rgba(242,237,230,0.2);
+  color: var(--paper);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.contact-btn:hover {
+  background: var(--hot);
+  border-color: var(--hot);
+  color: var(--ink);
+}
+.contact-btn .arrow { margin-left: auto; }
+
+/* ═══════════ QUIZ ═══════════ */
+.quiz-shell { padding: 36px; }
+.q-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid rgba(242,237,230,0.15);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+.q-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  color: var(--acid);
+}
+.q-pips { display: flex; gap: 6px; }
+.pip {
+  width: 12px; height: 12px;
+  border: 2px solid rgba(242,237,230,0.2);
+  background: transparent;
+  transition: all 0.3s;
+}
+.pip.correct { background: var(--acid); border-color: var(--acid); }
+.pip.wrong { background: var(--hot); border-color: var(--hot); }
+.pip.current { border-color: var(--paper); animation: pip-blink 0.8s step-end infinite; }
+@keyframes pip-blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+.q-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--paper);
+  line-height: 1.4;
+  margin-bottom: 24px;
+  min-height: 60px;
+}
+.q-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; background: rgba(242,237,230,0.1); margin-bottom: 20px; }
+.q-opt {
+  background: var(--ink);
+  border: none;
+  padding: 18px 16px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: rgba(242,237,230,0.7);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.q-opt::before {
+  content: attr(data-letter);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  color: rgba(242,237,230,0.2);
+  margin-right: 10px;
+}
+.q-opt:hover:not(:disabled) { background: #1a1a1a; color: var(--paper); }
+.q-opt.correct { background: rgba(200,255,0,0.15); color: var(--acid); }
+.q-opt.wrong { background: rgba(255,45,85,0.15); color: var(--hot); }
+.q-opt:disabled { cursor: default; }
+.q-fb {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  min-height: 24px;
+  line-height: 1.5;
+  padding: 12px 0;
+  border-top: 1px solid rgba(242,237,230,0.1);
+}
+.q-next {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 4px;
+  padding: 14px 32px;
+  background: var(--paper);
+  color: var(--ink);
+  border: none;
+  cursor: pointer;
+  margin-top: 12px;
+  display: none;
+  transition: all 0.15s;
+}
+.q-next:hover { background: var(--acid); }
+
+.q-result {
+  display: none;
+  text-align: center;
+  padding: 40px;
+}
+.result-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 100px;
+  color: var(--acid);
+  line-height: 1;
+  display: block;
+}
+.result-label {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 4px;
+  color: var(--paper);
+  margin-bottom: 8px;
+  display: block;
+}
+.result-msg {
+  font-size: 13px;
+  color: rgba(242,237,230,0.6);
+  margin-bottom: 32px;
+  line-height: 1.7;
+}
+.replay-btn {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 4px;
+  padding: 16px 40px;
+  background: var(--hot);
+  color: var(--paper);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.replay-btn:hover { background: #ff0033; }
+
+/* ═══════════ KONAMI ═══════════ */
+.konami {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--ink);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+.konami.show { display: flex; }
+.konami-big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(40px, 8vw, 80px);
+  letter-spacing: 6px;
+  color: var(--acid);
+  line-height: 1;
+  margin-bottom: 20px;
+  animation: glitch 2s infinite;
+}
+@keyframes glitch {
+  0%,90%,100% { text-shadow: none; transform: none; }
+  91% { text-shadow: -3px 0 var(--hot), 3px 0 var(--cyan); transform: translate(-2px,1px); }
+  92% { text-shadow: 3px 0 var(--hot), -3px 0 var(--cyan); transform: translate(2px,-1px); }
+}
+.konami-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: rgba(242,237,230,0.5);
+  margin-bottom: 32px;
+  text-transform: uppercase;
+  line-height: 2;
+}
+.konami-close {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 4px;
+  padding: 14px 36px;
+  background: transparent;
+  border: 2px solid var(--paper);
+  color: var(--paper);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.konami-close:hover { background: var(--paper); color: var(--ink); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .proj-grid, .design-grid, .exp-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 680px) {
+  .hero-grid, .skill-grid, .proj-grid, .design-grid, .about-split, .exp-grid { grid-template-columns: 1fr; }
+  .q-opts { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .name-block h1 { font-size: 52px; }
+  .photo-card { flex-direction: column; align-items: flex-start; }
+}
+</style>
+
+<div class="cur-dot" id="cDot"></div>
+<div class="cur-ring" id="cRing"></div>
+
+<div class="crt-noise"></div>
+<div class="crt-scan"></div>
+<div class="crt-glow"></div>
+<div class="crt-vignette"></div>
+
+<!-- SIDE TRACKER -->
+<div class="side-track" id="sideTrack">
+  <div class="track-dot active" data-target="s-home" data-label="HOME" onclick="showSec('s-home')"></div>
+  <div class="track-dot" data-target="s-skills" data-label="SKILLS" onclick="showSec('s-skills')"></div>
+  <div class="track-dot" data-target="s-projects" data-label="PROJECTS" onclick="showSec('s-projects')"></div>
+  <div class="track-dot" data-target="s-design" data-label="DESIGN" onclick="showSec('s-design')"></div>
+  <div class="track-dot" data-target="s-speaking" data-label="SPEAKING" onclick="showSec('s-speaking')"></div>
+  <div class="track-dot" data-target="s-hosting" data-label="HOSTING" onclick="showSec('s-hosting')"></div>
+  <div class="track-dot" data-target="s-about" data-label="ABOUT" onclick="showSec('s-about')"></div>
+  <div class="track-dot" data-target="s-quiz" data-label="QUIZ" onclick="showSec('s-quiz')"></div>
+</div>
+
+<svg class="screen-filter" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <filter id="crt-fisheye">
+    <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="1" seed="2" result="noise"/>
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<!-- KONAMI OVERLAY -->
+<div class="konami" id="konamiOverlay">
+  <div class="konami-big">CHEAT CODE<br>ACTIVATED</div>
+  <div class="konami-sub">
+    CLASS: ◆ LEGENDARY DEVELOPER ◆<br>
+    ALL SKILLS MAXED · INFINITE XP<br>
+    "You exist because the universe wanted a hacker, Morty."
+  </div>
+  <button class="konami-close" onclick="document.getElementById('konamiOverlay').classList.remove('show')">PRESS START TO CONTINUE</button>
+</div>
+
+<div class="screen">
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    &nbsp;&nbsp; ★ SARVASVA.EXE &nbsp;&nbsp;|&nbsp;&nbsp; PENTESTER · FULL STACK · DESIGNER · QUIZ HOST &nbsp;&nbsp;|&nbsp;&nbsp; ⬆⬆⬇⬇⬅➡⬅➡ BA → SECRET UNLOCK &nbsp;&nbsp;|&nbsp;&nbsp; WUBBA LUBBA DUB DUB &nbsp;&nbsp;|&nbsp;&nbsp; DIMENSION C-137 &nbsp;&nbsp;|&nbsp;&nbsp; QUEST LOG UPDATED &nbsp;&nbsp;|&nbsp;&nbsp; ★ SARVASVA.EXE &nbsp;&nbsp;|&nbsp;&nbsp; PENTESTER · FULL STACK · DESIGNER · QUIZ HOST &nbsp;&nbsp;|&nbsp;&nbsp; ⬆⬆⬇⬇⬅➡⬅➡ BA → SECRET UNLOCK &nbsp;&nbsp;|&nbsp;&nbsp; WUBBA LUBBA DUB DUB &nbsp;&nbsp;|&nbsp;&nbsp; DIMENSION C-137 &nbsp;&nbsp;|&nbsp;&nbsp; QUEST LOG UPDATED &nbsp;&nbsp;
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" data-target="s-home" onclick="showSec('s-home',this)">HOME</button>
+  <button class="nav-btn" data-target="s-skills" onclick="showSec('s-skills',this)">SKILLS</button>
+  <button class="nav-btn" data-target="s-projects" onclick="showSec('s-projects',this)">PROJECTS</button>
+  <button class="nav-btn" data-target="s-design" onclick="showSec('s-design',this)">DESIGN</button>
+  <button class="nav-btn" data-target="s-speaking" onclick="showSec('s-speaking',this)">SPEAKING</button>
+  <button class="nav-btn" data-target="s-hosting" onclick="showSec('s-hosting',this)">HOSTING</button>
+  <button class="nav-btn" data-target="s-about" onclick="showSec('s-about',this)">ABOUT</button>
+  <button class="nav-btn" data-target="s-quiz" onclick="showSec('s-quiz',this)">QUIZ</button>
+</nav>
+
+<!-- ═══ SECTION: HOME ═══ -->
+<div id="s-home" class="section">
+  <div class="hero-grid">
+    <div class="hero-left">
+      <div class="name-block reveal">
+        <h1>
+          <span class="outline">SARVASVA</span>
+          <em>/ HACKER</em>
+          <em style="-webkit-text-stroke:0px;color:var(--cyan)">/ BUILDER</em>
+        </h1>
+        <div class="name-subline">CS Undergrad · Cybersec · Design · AI · Quiz Host</div>
+      </div>
+      <div class="photo-card reveal scale-in" style="transition-delay:0.05s">
+        <div class="photo-frame">ADD PHOTO</div>
+        <div class="photo-caption">Replace this block with your portrait image.</div>
+      </div>
+      <div class="tags-row reveal" style="transition-delay:0.1s">
+        <div class="tag" onclick="bounce(this)">PENTESTER</div>
+        <div class="tag" onclick="bounce(this)">CTF PLAYER</div>
+        <div class="tag" onclick="bounce(this)">FULL STACK</div>
+        <div class="tag" onclick="bounce(this)">RED TEAM</div>
+        <div class="tag" onclick="bounce(this)">AI BUILDER</div>
+        <div class="tag" onclick="bounce(this)">QUIZ HOST</div>
+        <div class="tag" onclick="bounce(this)">DESIGNER</div>
+        <div class="tag" onclick="bounce(this)">PORTAL GUN: LOADED</div>
+      </div>
+      <div class="hero-stats reveal" style="transition-delay:0.2s">
+        <div class="stat"><span class="stat-n">2028</span><span class="stat-l">Grad year</span></div>
+        <div class="stat"><span class="stat-n">4+</span><span class="stat-l">Certs</span></div>
+        <div class="stat"><span class="stat-n">∞</span><span class="stat-l">Curiosity</span></div>
+        <div class="stat"><span class="stat-n">CTF</span><span class="stat-l">Active</span></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-poster">
+        <div class="poster-inner reveal slide-right">
+          <div class="poster-big">DON'T</div>
+          <div class="poster-big">HIRE<br>JUST</div>
+          <div class="poster-accent">ANY DEV</div>
+          <div class="poster-big" style="color:var(--hot)">HIRE THIS</div>
+          <div class="poster-big">ONE.</div>
+          <div class="poster-sub">If you miss it — did it ever exist?</div>
+        </div>
+      </div>
+      <div class="halftone-bar">
+        <span>DIMENSION C-137</span>
+        <div class="hp-wrap">
+          <span class="hp-label">HP</span>
+          <div class="hp-track"><div class="hp-fill"></div></div>
+          <span style="font-family:'Space Mono',monospace;font-size:9px;color:rgba(242,237,230,0.5)">94/100</span>
+        </div>
+        <span id="clk">00:00:00</span>
+      </div>
+    </div>
+  </div>
+  <!-- brutalist quote strip -->
+  <div style="background:var(--hot);padding:14px 36px;display:flex;align-items:center;gap:20px;border-top:4px solid var(--ink)">
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:3px;color:var(--ink)">RICK MODE:</span>
+    <span style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--ink)">"I turned myself into a developer, Morty! I'M DEVELOPER RICK!"</span>
+  </div>
+</div>
+
+<!-- ═══ SECTION: SKILLS ═══ -->
+<div id="s-skills" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">02</div>
+    <div class="sec-title">SKILL <em>TREE</em></div>
+  </div>
+  <div class="sec-body" style="padding:3px">
+    <div class="skill-grid" id="skillGrid">
+      <div class="skill-cat reveal">
+        <div class="skill-cat-title">CYBER / OFFENSE</div>
+        <div class="skill-row"><div class="skill-label">Penetration Testing<span>LVL 8</span></div><div class="skill-track"><div class="skill-fill" data-w="80"></div></div></div>
+        <div class="skill-row"><div class="skill-label">Red Teaming<span>LVL 7</span></div><div class="skill-track"><div class="skill-fill" data-w="72"></div></div></div>
+        <div class="skill-row"><div class="skill-label">CTF Competitions<span>LVL 8</span></div><div class="skill-track"><div class="skill-fill" data-w="80"></div></div></div>
+        <div class="skill-row"><div class="skill-label">LLM Security<span>LVL 9</span></div><div class="skill-track"><div class="skill-fill" data-w="88"></div></div></div>
+        <div class="skill-row"><div class="skill-label">Reverse Shells<span>LVL 7</span></div><div class="skill-track"><div class="skill-fill" data-w="70"></div></div></div>
+        <div class="badge-row"><span class="badge">Metasploit</span><span class="badge">Kali Linux</span><span class="badge">OWASP</span><span class="badge">Wireshark</span></div>
+      </div>
+      <div class="skill-cat reveal" style="transition-delay:0.1s">
+        <div class="skill-cat-title">LANGUAGES</div>
+        <div class="skill-row"><div class="skill-label">Python<span>LVL 9</span></div><div class="skill-track"><div class="skill-fill" data-w="90"></div></div></div>
+        <div class="skill-row"><div class="skill-label">JavaScript<span>LVL 8</span></div><div class="skill-track"><div class="skill-fill" data-w="80"></div></div></div>
+        <div class="skill-row"><div class="skill-label">React.js<span>LVL 7</span></div><div class="skill-track"><div class="skill-fill" data-w="74"></div></div></div>
+        <div class="skill-row"><div class="skill-label">FastAPI<span>LVL 8</span></div><div class="skill-track"><div class="skill-fill" data-w="78"></div></div></div>
+        <div class="skill-row"><div class="skill-label">Java / C#<span>LVL 6</span></div><div class="skill-track"><div class="skill-fill" data-w="60"></div></div></div>
+        <div class="badge-row"><span class="badge">Node.js</span><span class="badge">Express</span><span class="badge">REST API</span></div>
+      </div>
+      <div class="skill-cat reveal" style="transition-delay:0.15s">
+        <div class="skill-cat-title">DESIGN</div>
+        <div class="skill-row"><div class="skill-label">Graphic Design<span>LVL 8</span></div><div class="skill-track"><div class="skill-fill" data-w="80"></div></div></div>
+        <div class="skill-row"><div class="skill-label">Event Posters<span>LVL 8</span></div><div class="skill-track"><div class="skill-fill" data-w="82"></div></div></div>
+        <div class="skill-row"><div class="skill-label">Social Media<span>LVL 7</span></div><div class="skill-track"><div class="skill-fill" data-w="75"></div></div></div>
+        <div class="skill-row"><div class="skill-label">Quiz Hosting<span>LVL 9</span></div><div class="skill-track"><div class="skill-fill" data-w="88"></div></div></div>
+        <div class="badge-row"><span class="badge">Grey Matter</span><span class="badge">Incridea '26</span></div>
+      </div>
+      <div class="skill-cat reveal" style="transition-delay:0.2s">
+        <div class="skill-cat-title">AI / ML</div>
+        <div class="skill-row"><div class="skill-label">LLM Integration<span>LVL 9</span></div><div class="skill-track"><div class="skill-fill" data-w="88"></div></div></div>
+        <div class="skill-row"><div class="skill-label">RAG Systems<span>LVL 7</span></div><div class="skill-track"><div class="skill-fill" data-w="72"></div></div></div>
+        <div class="skill-row"><div class="skill-label">LSTM / ML<span>LVL 7</span></div><div class="skill-track"><div class="skill-fill" data-w="70"></div></div></div>
+        <div class="badge-row"><span class="badge">Ollama</span><span class="badge">LangChain</span><span class="badge">Prompt Eng.</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION: PROJECTS ═══ -->
+<div id="s-projects" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">03</div>
+    <div class="sec-title">QUEST <em>LOG</em></div>
+  </div>
+  <div class="sec-body" style="padding:3px">
+    <div class="proj-grid">
+      <div class="proj-card reveal" data-num="01">
+        <div class="proj-rarity epic">◆ EPIC RARITY</div>
+        <div class="proj-title">LLM SECURITY FRAMEWORK</div>
+        <div class="proj-desc">Red-teaming framework with input/output validation. Detects prompt injection across 11 categories — API keys, SSNs, JWT tokens. Confidence scoring + severity classification. Full CLI tool.</div>
+        <div class="proj-tags"><span class="ptag">Python</span><span class="ptag">NLP</span><span class="ptag">spaCy</span><span class="ptag">LangChain</span><span class="ptag">Red Team</span></div>
+      </div>
+      <div class="proj-card reveal" data-num="02" style="transition-delay:0.1s">
+        <div class="proj-rarity rare">◆ RARE RARITY</div>
+        <div class="proj-title">RAT — ETHICAL RESEARCH</div>
+        <div class="proj-desc">Python Remote Access Trojan in a controlled lab — reverse shell, command execution, file exfiltration. Documented threat-model analysis. FOR ETHICAL USE ONLY.</div>
+        <div class="proj-tags"><span class="ptag">Python</span><span class="ptag">Sockets</span><span class="ptag">Ethical Hacking</span></div>
+      </div>
+      <div class="proj-card reveal" data-num="03" style="transition-delay:0.2s">
+        <div class="proj-rarity uncommon">◆ UNCOMMON</div>
+        <div class="proj-title">ADHD FOCUS EXTENSION</div>
+        <div class="proj-desc">Published Chrome extension — focus timers, site-blocking, task reminders. Chrome Extensions API for persistent storage and tab management.</div>
+        <div class="proj-tags"><span class="ptag">HTML</span><span class="ptag">JavaScript</span><span class="ptag">Chrome API</span></div>
+      </div>
+    </div>
+    <div style="background:var(--hot);padding:16px 24px;margin-top:3px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:var(--ink)">"That's a side quest, Morty. Everything in life is a side quest."</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION: DESIGN ═══ -->
+<div id="s-design" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">04</div>
+    <div class="sec-title">DESIGN <em>VAULT</em></div>
+  </div>
+  <div class="sec-body" style="padding:3px">
+    <div style="background:rgba(242,237,230,0.1);padding:14px 24px;margin-bottom:3px;border-left:4px solid var(--hot)">
+      <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,237,230,0.6)">GREY MATTER QDC · INCRIDEA '26 · EVENT DESIGN</span>
+    </div>
+    <div class="design-grid">
+      <figure class="design-item reveal">
+        <div class="design-media"><div class="design-placeholder">ADD IMAGE</div></div>
+        <figcaption class="design-caption">
+          <div class="design-title">TECH FEST POSTER</div>
+          <div class="design-meta">Incridea '26 · Main Event</div>
+        </figcaption>
+      </figure>
+      <figure class="design-item reveal" style="transition-delay:0.05s">
+        <div class="design-media"><div class="design-placeholder">ADD IMAGE</div></div>
+        <figcaption class="design-caption">
+          <div class="design-title">QUIZ NIGHT FLYER</div>
+          <div class="design-meta">Grey Matter QDC</div>
+        </figcaption>
+      </figure>
+      <figure class="design-item reveal" style="transition-delay:0.1s">
+        <div class="design-media"><div class="design-placeholder">ADD IMAGE</div></div>
+        <figcaption class="design-caption">
+          <div class="design-title">SOCIAL CAMPAIGN</div>
+          <div class="design-meta">Multi-platform Assets</div>
+        </figcaption>
+      </figure>
+      <figure class="design-item reveal" style="transition-delay:0.15s">
+        <div class="design-media"><div class="design-placeholder">ADD IMAGE</div></div>
+        <figcaption class="design-caption">
+          <div class="design-title">SIDE EVENT KIT</div>
+          <div class="design-meta">Incridea '26 · Sub-tracks</div>
+        </figcaption>
+      </figure>
+      <figure class="design-item reveal" style="transition-delay:0.2s">
+        <div class="design-media"><div class="design-placeholder">ADD IMAGE</div></div>
+        <figcaption class="design-caption">
+          <div class="design-title">CLUB IDENTITY</div>
+          <div class="design-meta">Brand System</div>
+        </figcaption>
+      </figure>
+      <figure class="design-item reveal" style="transition-delay:0.25s">
+        <div class="design-media"><div class="design-placeholder">ADD IMAGE</div></div>
+        <figcaption class="design-caption">
+          <div class="design-title">HACKATHON PROMO</div>
+          <div class="design-meta">Event Poster Series</div>
+        </figcaption>
+      </figure>
+    </div>
+    <div class="design-note">[ Replace the placeholders with your actual poster images. ]</div>
+  </div>
+</div>
+
+<!-- ═══ SECTION: SPEAKING ═══ -->
+<div id="s-speaking" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">05</div>
+    <div class="sec-title">PUBLIC <em>SPEAKING</em></div>
+  </div>
+  <div class="sec-body" style="padding:3px">
+    <div class="exp-grid">
+      <div class="exp-card reveal" data-num="01">
+        <div class="exp-title">CYBERSECURITY 101 TALK</div>
+        <div class="exp-meta">Campus Seminar · 45 mins</div>
+        <div class="exp-desc">Placeholder for your talk description, audience size, and key takeaways.</div>
+        <div class="exp-tags"><span class="exp-tag">Keynote</span><span class="exp-tag">Beginner Friendly</span><span class="exp-tag">Q&A</span></div>
+      </div>
+      <div class="exp-card reveal" data-num="02" style="transition-delay:0.05s">
+        <div class="exp-title">LLM SECURITY SESSION</div>
+        <div class="exp-meta">Tech Club · 30 mins</div>
+        <div class="exp-desc">Add details about prompt injection demos, safety workflows, or tooling.</div>
+        <div class="exp-tags"><span class="exp-tag">Live Demo</span><span class="exp-tag">Red Team</span><span class="exp-tag">AI</span></div>
+      </div>
+      <div class="exp-card reveal" data-num="03" style="transition-delay:0.1s">
+        <div class="exp-title">CAREER + PORTFOLIO PANEL</div>
+        <div class="exp-meta">Community Event · Panelist</div>
+        <div class="exp-desc">Placeholder for your panel topic, role, and highlights.</div>
+        <div class="exp-tags"><span class="exp-tag">Panel</span><span class="exp-tag">Mentorship</span><span class="exp-tag">Careers</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION: HOSTING ═══ -->
+<div id="s-hosting" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">06</div>
+    <div class="sec-title">HOSTING <em>EXPERIENCE</em></div>
+  </div>
+  <div class="sec-body" style="padding:3px">
+    <div class="exp-grid">
+      <div class="exp-card reveal" data-num="01">
+        <div class="exp-title">QUIZ NIGHT HOST</div>
+        <div class="exp-meta">Grey Matter QDC · Weekly</div>
+        <div class="exp-desc">Placeholder for formats, audience size, and your hosting style.</div>
+        <div class="exp-tags"><span class="exp-tag">Live Hosting</span><span class="exp-tag">Crowd Control</span><span class="exp-tag">Humor</span></div>
+      </div>
+      <div class="exp-card reveal" data-num="02" style="transition-delay:0.05s">
+        <div class="exp-title">INCRIDEA EVENT EMCEE</div>
+        <div class="exp-meta">Festival Stage · 2+ hrs</div>
+        <div class="exp-desc">Add your highlight moments and how you managed transitions.</div>
+        <div class="exp-tags"><span class="exp-tag">Stage</span><span class="exp-tag">Program Flow</span><span class="exp-tag">Energy</span></div>
+      </div>
+      <div class="exp-card reveal" data-num="03" style="transition-delay:0.1s">
+        <div class="exp-title">WORKSHOP FACILITATOR</div>
+        <div class="exp-meta">Hands-on Session · 60 mins</div>
+        <div class="exp-desc">Placeholder for workshop topic, tools, and participant feedback.</div>
+        <div class="exp-tags"><span class="exp-tag">Interactive</span><span class="exp-tag">Tech</span><span class="exp-tag">Guided</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION: ABOUT ═══ -->
+<div id="s-about" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">07</div>
+    <div class="sec-title">PLAYER <em>STATS</em></div>
+  </div>
+  <div class="sec-body" style="padding:3px">
+    <div class="about-split">
+      <div class="about-left">
+        <div class="stat-grid reveal">
+          <div class="stat-cell"><span class="stat-big">2028</span><span class="stat-sm">Graduation</span></div>
+          <div class="stat-cell"><span class="stat-big">CTF</span><span class="stat-sm">Active Player</span></div>
+          <div class="stat-cell"><span class="stat-big">4+</span><span class="stat-sm">Certs</span></div>
+          <div class="stat-cell"><span class="stat-big">∞</span><span class="stat-sm">Curiosity</span></div>
+        </div>
+        <div style="height:3px;background:var(--paper);margin:3px 0"></div>
+        <div class="term reveal" style="transition-delay:0.1s">
+          <div><span class="prompt">C:\SARVASVA&gt;</span> whoami</div>
+          <div class="out">→ CS Undergrad @ NMAM Institute of Technology, Nitte</div>
+          <div class="out">→ Cybersec + Full-Stack + AI + Designer + Quiz Host</div>
+          <div><span class="prompt">C:\SARVASVA&gt;</span> cat mission.txt</div>
+          <div class="out">→ Break things ethically. Build things that matter.</div>
+          <div><span class="prompt">C:\SARVASVA&gt;</span> ls ./clubs/</div>
+          <div class="out">→ Grey Matter QDC · Incridea '26 (Publicity)</div>
+        </div>
+      </div>
+      <div class="about-right">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:4px;color:rgba(242,237,230,0.4);margin-bottom:16px">ACHIEVEMENTS UNLOCKED</div>
+        <div class="certs reveal">
+          <div class="cert-item">Google: Cybersecurity Foundations</div>
+          <div class="cert-item">TryHackMe: Cybersecurity 101</div>
+          <div class="cert-item">ZSecurity: Ethical Hacking</div>
+          <div class="cert-item">Unreal Engine Blueprint Dev</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:4px;color:rgba(242,237,230,0.4);margin-bottom:12px">OPEN TO COLLABORATE</div>
+        <div class="contact-btns reveal" style="transition-delay:0.15s">
+          <a href="mailto:sarvasva5758@gmail.com" class="contact-btn">✉ &nbsp;Email<span class="arrow">→</span></a>
+          <a href="https://linkedin.com/in/sarvasva-s-4470562b4" class="contact-btn" target="_blank">◈ &nbsp;LinkedIn<span class="arrow">→</span></a>
+          <a href="https://github.com/scrxtch12418" class="contact-btn" target="_blank">⌥ &nbsp;GitHub<span class="arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION: QUIZ ═══ -->
+<div id="s-quiz" class="section">
+  <div class="sec-hdr">
+    <div class="sec-num">08</div>
+    <div class="sec-title">QUIZ <em>ARENA</em></div>
+  </div>
+  <div class="quiz-shell">
+    <div id="quiz-game">
+      <div class="q-meta">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:2px;color:rgba(242,237,230,0.4)">CAN YOU BEAT THE QUIZ MASTER?</div>
+        <div class="q-score">SCORE: <span id="sv">0</span> / <span id="st">8</span></div>
+      </div>
+      <div class="q-pips" id="qPips"></div>
+      <div style="height:20px"></div>
+      <div class="q-text" id="qText"></div>
+      <div class="q-opts" id="qOpts"></div>
+      <div class="q-fb" id="qFb"></div>
+      <button class="q-next" id="qNext" onclick="nextQ()">NEXT QUESTION →</button>
+    </div>
+    <div class="q-result" id="qResult">
+      <span class="result-label">FINAL SCORE</span>
+      <span class="result-score" id="rScore">0</span>
+      <div class="result-msg" id="rMsg"></div>
+      <button class="replay-btn" onclick="initQuiz()">↩ PLAY AGAIN</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ═══ CURSOR ═══ */
+var cDot=document.getElementById('cDot'),cRing=document.getElementById('cRing');
+var mx=0,my=0,rx=0,ry=0;
+var TC=['#ff2d55','#c8ff00','#00e5ff','#9b00ff','#ff6a00'];
+document.addEventListener('mousemove',function(e){
+  mx=e.clientX; my=e.clientY;
+  cDot.style.left=mx+'px'; cDot.style.top=my+'px';
+  if(Math.random()<0.25){
+    var t=document.createElement('div');
+    t.className='pxt';
+    t.style.cssText='left:'+(mx+Math.random()*16-8)+'px;top:'+(my+Math.random()*16-8)+'px;background:'+TC[Math.floor(Math.random()*TC.length)]+';width:'+(Math.random()*6+3)+'px;height:'+(Math.random()*6+3)+'px';
+    document.body.appendChild(t);
+    setTimeout(function(){if(t.parentNode)t.remove()},750);
+  }
+});
+setInterval(function(){rx+=(mx-rx)*0.18;ry+=(my-ry)*0.18;cRing.style.left=rx+'px';cRing.style.top=ry+'px';},14);
+
+/* ═══ CLOCK ═══ */
+function tick(){
+  var n=new Date();
+  var el=document.getElementById('clk');
+  if(el) el.textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+':'+String(n.getSeconds()).padStart(2,'0');
+}
+setInterval(tick,1000); tick();
+
+/* ═══ NAV ═══ */
+function showSec(id,btn){
+  var target=document.getElementById(id);
+  if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+  if(btn && btn.classList.contains('nav-btn')){
+    document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');
+  }
+  document.querySelectorAll('.track-dot').forEach(function(d){
+    d.classList.toggle('active', d.getAttribute('data-target')===id);
+  });
+  if(id==='s-quiz' && !quizInitialized){ initQuiz(); quizInitialized=true; }
+  setTimeout(function(){triggerReveal();animateBars();},120);
+}
+
+function updateActiveNav(){
+  var mid=window.innerHeight*0.5;
+  var activeId=null;
+  document.querySelectorAll('.section').forEach(function(sec){
+    var rect=sec.getBoundingClientRect();
+    if(rect.top<=mid && rect.bottom>=mid) activeId=sec.id;
+  });
+  if(activeId){
+    document.querySelectorAll('.nav-btn').forEach(function(b){
+      b.classList.toggle('active',b.getAttribute('data-target')===activeId);
+    });
+    document.querySelectorAll('.track-dot').forEach(function(d){
+      d.classList.toggle('active',d.getAttribute('data-target')===activeId);
+    });
+    if(activeId==='s-quiz' && !quizInitialized){ initQuiz(); quizInitialized=true; }
+  }
+}
+
+/* ═══ SCROLL / VISIBILITY REVEAL ═══ */
+function triggerReveal(){
+  document.querySelectorAll('.reveal').forEach(function(el){
+    var rect=el.getBoundingClientRect();
+    var inView=rect.top < window.innerHeight - 40;
+    if(inView) el.classList.add('visible');
+  });
+}
+function onScroll(){
+  triggerReveal();
+  animateBars();
+  updateActiveNav();
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+setTimeout(function(){triggerReveal();updateActiveNav();},120);
+
+/* ═══ SKILL BARS ═══ */
+var barsAnimated=false;
+function animateBars(){
+  if(barsAnimated) return;
+  var sec=document.getElementById('s-skills');
+  if(!sec) return;
+  var rect=sec.getBoundingClientRect();
+  if(rect.top < window.innerHeight*0.7 && rect.bottom > 0){
+    document.querySelectorAll('#s-skills .skill-fill').forEach(function(bar){
+      bar.style.width=bar.dataset.w+'%';
+    });
+    barsAnimated=true;
+  }
+}
+animateBars();
+
+/* ═══ TAG BOUNCE ═══ */
+function bounce(el){
+  el.style.transform='scale(1.25) rotate(-3deg)';
+  setTimeout(function(){el.style.transform=''},300);
+}
+
+/* ═══ KONAMI ═══ */
+var kSeq=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+var ki=0;
+document.addEventListener('keydown',function(e){
+  if(e.code===kSeq[ki]){ki++;if(ki===kSeq.length){document.getElementById('konamiOverlay').classList.add('show');ki=0;}}
+  else ki=0;
+});
+
+/* ═══ QUIZ ═══ */
+var questions=[
+  {q:"Which tool is the go-to for network scanning and reconnaissance?",opts:["Metasploit","Nmap","Burp Suite","Hydra"],ans:1,exp:"Nmap is the recon workhorse of every pentest."},
+  {q:"What does RAT stand for in cybersecurity?",opts:["Remote Access Trojan","Random Attack Tool","Rapid Auth Token","Reverse App Testing"],ans:0,exp:"Remote Access Trojan — a stealthy backdoor for persistent remote control."},
+  {q:"Which HTTP method is most exploited in CSRF attacks?",opts:["GET","POST","DELETE","OPTIONS"],ans:1,exp:"POST requests carry state-changing actions — CSRF forges them on behalf of victims."},
+  {q:"What is prompt injection in LLM security?",opts:["Overloading GPU memory","Injecting malicious instructions via user input","SQL injection for AI","Buffer overflow in NLP"],ans:1,exp:"Prompt injection tricks an LLM into following attacker-controlled instructions."},
+  {q:"Which Rick & Morty character would make the best pentester?",opts:["Jerry (too scared)","Bird Person (no hands)","Rick Sanchez (galaxy-brain)","Mr. Meeseeks (LOOK AT ME)"],ans:2,exp:"Obviously Rick. He once hacked the Galactic Federation with a butter robot."},
+  {q:"In CTF, what does the 'pwn' category involve?",opts:["Web vulns","Binary exploitation","Crypto puzzles","Network forensics"],ans:1,exp:"Pwn = binary exploitation — stack overflows, ROP chains, the real fun stuff."},
+  {q:"Which framework powers Sarvasva's AI Sales Agent backend?",opts:["Django","Flask","FastAPI","Express.js"],ans:2,exp:"FastAPI — async Python, auto-generated docs, real Outlook + Zoho integrations."},
+  {q:"What does OWASP stand for?",opts:["Open Web Application Security Project","Official Web Audit Security Protocol","Open Worldwide Access Security Platform","Online Web Attack Simulation Protocol"],ans:0,exp:"Open Web Application Security Project — the bible of web security."},
+];
+var qCur=0,qScore=0,qAns=[];
+var quizInitialized=false;
+
+function initQuiz(){
+  quizInitialized=true;
+  qCur=0; qScore=0; qAns=[];
+  document.getElementById('quiz-game').style.display='block';
+  document.getElementById('qResult').style.display='none';
+  var pips=document.getElementById('qPips');
+  pips.innerHTML='';
+  questions.forEach(function(_,i){
+    var d=document.createElement('div');
+    d.className='pip'; d.id='pip'+i;
+    pips.appendChild(d);
+  });
+  renderQ();
+}
+
+function renderQ(){
+  var q=questions[qCur];
+  document.getElementById('qText').textContent=(qCur+1)+'. '+q.q;
+  document.getElementById('qFb').textContent='';
+  document.getElementById('qFb').style.color='';
+  document.getElementById('qNext').style.display='none';
+  document.getElementById('sv').textContent=qScore;
+  for(var i=0;i<questions.length;i++){
+    var p=document.getElementById('pip'+i);
+    if(!p) continue;
+    if(i<qCur) p.className='pip '+(qAns[i]?'correct':'wrong');
+    else if(i===qCur) p.className='pip current';
+    else p.className='pip';
+  }
+  var LETTERS=['A','B','C','D'];
+  var opts=document.getElementById('qOpts');
+  opts.innerHTML='';
+  q.opts.forEach(function(opt,i){
+    var b=document.createElement('button');
+    b.className='q-opt';
+    b.setAttribute('data-letter',LETTERS[i]);
+    b.textContent=opt;
+    b.addEventListener('click',function(){selectAns(i,this)});
+    opts.appendChild(b);
+  });
+}
+
+function selectAns(idx,btn){
+  var q=questions[qCur];
+  document.querySelectorAll('.q-opt').forEach(function(b){b.disabled=true});
+  var fb=document.getElementById('qFb');
+  if(idx===q.ans){
+    btn.classList.add('correct');
+    qScore++; qAns.push(true);
+    fb.textContent='✔ CORRECT! '+q.exp;
+    fb.style.color='var(--acid)';
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('.q-opt')[q.ans].classList.add('correct');
+    qAns.push(false);
+    fb.textContent='✘ NOPE! '+q.exp;
+    fb.style.color='var(--hot)';
+  }
+  document.getElementById('sv').textContent=qScore;
+  if(qCur<questions.length-1) document.getElementById('qNext').style.display='block';
+  else setTimeout(showResult,1400);
+}
+
+function nextQ(){qCur++;renderQ();}
+
+function showResult(){
+  document.getElementById('quiz-game').style.display='none';
+  var res=document.getElementById('qResult');
+  res.style.display='block';
+  document.getElementById('rScore').textContent=qScore+'/'+questions.length;
+  var msgs=[[0,2,'GAME OVER.\nRick is disappointed.\nBut hey, you tried.'],[3,4,'NOT BAD.\nYou\'re a Morty in training.'],[5,6,'SOLID.\nRick Sanchez energy detected.'],[7,7,'IMPRESSIVE.\nLegendary dev unlocked.'],[8,8,'PERFECT SCORE.\nWUBBA LUBBA DUB DUB.']];
+  var msg=msgs[0][2];
+  msgs.forEach(function(m){if(qScore>=m[0]&&qScore<=m[1])msg=m[2];});
+  document.getElementById('rMsg').textContent=msg;
+}
+</script>
