@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SARVASVA :: PORTFOLIO</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;700;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="sarvasva_portfolio_v2.css">
+</head>
+
+<body>
+
+  <!-- POSTER FRAME COORDINATE ANCHORS -->
+  <div class="poster-frame-elements">
+    <div style="position:fixed; top:28px; left:28px; z-index:9999; font-size:8px; opacity:0.35; color:var(--paper);">
+      SYS_LOCK // SECURE</div>
+    <div style="position:fixed; top:28px; right:28px; z-index:9999; font-size:8px; opacity:0.35; color:var(--paper);">[
+      C-137 ]</div>
+    <div style="position:fixed; bottom:42px; left:28px; z-index:9999; font-size:8px; opacity:0.35; color:var(--paper);">
+      SARVASVA.EXE_V2</div>
+    <div
+      style="position:fixed; bottom:42px; right:28px; z-index:9999; font-size:8px; opacity:0.35; color:var(--paper);">◆
+      DETECTED</div>
+  </div>
+
+  <div id="cDot"></div>
+  <div id="cRing"></div>
+  <canvas id="noiseCanvas"></canvas>
+  <div id="scanlines"></div>
+  <div id="rollingLine"></div>
+  <div id="vignette"></div>
+  <div id="centerGlow"></div>
+  <div id="flickerEl"></div>
+
+  <!-- GLOW BLOBS — repositioned to the right side (white paper background side) -->
+  <div class="glow-blob"
+    style="width:340px;height:230px;background:#ff0040;--dur:4s;--del:0s;--op:.1;right:15%;top:10%"></div>
+  <div class="glow-blob"
+    style="width:280px;height:210px;background:#d4ff00;--dur:5s;--del:1.5s;--op:.08;right:25%;top:45%"></div>
+  <div class="glow-blob"
+    style="width:220px;height:220px;background:#00ffea;--dur:6s;--del:3s;--op:.08;right:5%;bottom:10%"></div>
+  <div class="glow-blob"
+    style="width:250px;height:170px;background:#bf00ff;--dur:4.5s;--del:2s;--op:.1;right:8%;top:20%"></div>
+  <div class="glow-blob"
+    style="width:200px;height:180px;background:#ff00aa;--dur:5.5s;--del:0.8s;--op:.08;left:65%;top:5%"></div>
+
+  <!-- KONAMI GAMING ARENA MODAL -->
+  <div id="konami">
+    <div class="k-big">ARCADE HACKER</div>
+    <div class="k-sub">USE SPACEBAR OR TOUCH THE GAMEPAD TO JUMP OVER THE FIREWALLS.<br>SYS_TELEMETRY: EVADE NETWORK
+      SPAM SHIELD</div>
+
+    <div
+      style="background:#000; border:3px solid var(--acid); padding:10px; position:relative; box-shadow:0 0 30px rgba(212,255,0,0.25); margin-bottom:18px; max-width:100%; width:640px; border-radius:4px; transform:rotate(-0.5deg);">
+      <canvas id="gameCanvas" width="600" height="200"
+        style="display:block; background:#050505; max-width:100%; height:auto; margin:0 auto; cursor:pointer;"></canvas>
+      <div id="gameOverScreen"
+        style="position:absolute; inset:0; background:rgba(8,8,8,0.92); display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px; z-index:100;">
+        <div
+          style="font-family:'Bebas Neue',sans-serif; font-size:36px; color:var(--hot); letter-spacing:4px; text-shadow:0 0 20px var(--hot);">
+          SYSTEM CRASHED</div>
+        <div id="finalScore" style="font-size:11px; color:var(--paper); letter-spacing:1px;">DATA PACKETS EXFILTRATED: 0
+        </div>
+        <button class="k-close" onclick="startGame()"
+          style="font-size:12px; padding:6px 14px; margin-top:5px; border-color:var(--acid); color:var(--acid); box-shadow:3px 3px 0 var(--acid);">REBOOT_HACK.EXE</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px;">
+      <button class="k-close" onclick="startGame()"
+        style="border-color:var(--cyan); color:var(--cyan); box-shadow:3px 3px 0 var(--cyan);">RUN GAME</button>
+      <button class="k-close" onclick="closeGame()">CLOSE CONSOLE</button>
+    </div>
+  </div>
+
+  <!-- TICKER -->
+  <div id="ticker">
+    <div class="tick-inner">
+      &nbsp;&nbsp;★ SARVASVA.EXE &nbsp;|&nbsp; PENTESTER · FULL STACK · DESIGNER · QUIZ HOST · PUBLIC SPEAKER
+      &nbsp;|&nbsp; ⬆⬆⬇⬇⬅➡⬅➡ BA → SECRET &nbsp;|&nbsp; DIMENSION C-137 &nbsp;|&nbsp;
+      SCROLL TO EXPLORE &nbsp;|&nbsp; ★ SARVASVA.EXE &nbsp;|&nbsp; PENTESTER · FULL STACK · DESIGNER · QUIZ HOST ·
+      PUBLIC SPEAKER &nbsp;|&nbsp; ⬆⬆⬇⬇⬅➡⬅➡ BA → SECRET &nbsp;|&nbsp; DIMENSION C-137
+      &nbsp;|&nbsp; SCROLL TO EXPLORE &nbsp;|&nbsp;
+    </div>
+  </div>
+
+  <!-- NAV DOTS (right side) -->
+  <div id="navDots">
+    <div class="ndot active" data-lbl="HOME" onclick="goSec(0)"></div>
+    <div class="ndot" data-lbl="ABOUT" onclick="goSec(1)"></div>
+    <div class="ndot" data-lbl="SKILLS" onclick="goSec(2)"></div>
+    <div class="ndot" data-lbl="PROJECTS" onclick="goSec(3)"></div>
+    <div class="ndot" data-lbl="DESIGN" onclick="goSec(4)"></div>
+    <div class="ndot" data-lbl="SPEAKING" onclick="goSec(5)"></div>
+    <div class="ndot" data-lbl="QUIZ" onclick="goSec(6)"></div>
+  </div>
+
+  <!-- NAV STRIP (bottom) -->
+  <div id="navStrip">
+    <button class="nsb active" onclick="goSec(0);setActive(this)">HOME</button>
+    <button class="nsb" onclick="goSec(1);setActive(this)">ABOUT</button>
+    <button class="nsb" onclick="goSec(2);setActive(this)">SKILLS</button>
+    <button class="nsb" onclick="goSec(3);setActive(this)">PROJECTS</button>
+    <button class="nsb" onclick="goSec(4);setActive(this)">DESIGN</button>
+    <button class="nsb" onclick="goSec(5);setActive(this)">SPEAKING</button>
+    <button class="nsb" onclick="goSec(6);setActive(this);initQ()">QUIZ</button>
+  </div>
+
+  <div id="scroller">
+
+    <!-- S0: HERO (HOME) -->
+    <section class="snap-sec" id="s0">
+      <div class="hero-grid" style="flex:1;min-height:0">
+        <div class="hero-left">
+          <div>
+            <div class="h-name rv">
+              <span class="outline">SARVASVA</span>
+              <span class="hot">/ HACKER</span>
+              <span class="cyn">/ BUILDER</span>
+            </div>
+            <div class="h-sub rv" style="transition-delay:.1s">CS Undergrad · Cybersec · Design · AI · Quiz Host ·
+              Speaker</div>
+
+            <!-- BRAND PERSONAL INTRODUCTION -->
+            <div class="h-intro rv"
+              style="transition-delay:.14s; margin-top: 12px; font-size: 11px; line-height: 1.6; color: rgba(245,240,232,0.85); background: rgba(0,0,0,0.2); padding: 8px 12px; border-left: 3px solid var(--hot);">
+              I am a cybersecurity enthusiast and full-stack software engineer pursuing my BE in Computer Science. I
+              specialize in penetration testing, building security tools, and designing AI-driven systems. Beyond code,
+              I build high-impact poster grids, direct stage productions, and coordinate trivia events for Grey Matter
+              QDC and Incridea.
+            </div>
+
+            <!-- DYNAMIC CYBER INDEX (TABLE OF CONTENTS) -->
+            <div class="toc-box rv" style="transition-delay:.18s;">
+              <div
+                style="font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:2px; color:var(--cyan); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span>■</span> INDEX // SYSTEM DIRECTORIES
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; font-size:9.5px;">
+                <a href="javascript:goSec(0)"><span style="color:var(--cyan);">00 //</span> HERO_HOME</a>
+                <a href="javascript:goSec(1)"><span style="color:var(--cyan);">01 //</span> PLAYER_STATS</a>
+                <a href="javascript:goSec(2)"><span style="color:var(--cyan);">02 //</span> SKILL_TREE</a>
+                <a href="javascript:goSec(3)"><span style="color:var(--cyan);">03 //</span> QUEST_LOG</a>
+                <a href="javascript:goSec(4)"><span style="color:var(--cyan);">04 //</span> DESIGN_GALLERY</a>
+                <a href="javascript:goSec(5)"><span style="color:var(--cyan);">05 //</span> SPEAKING_HOST</a>
+                <a href="javascript:goSec(6)"><span style="color:var(--cyan);">06 //</span> QUIZ_ARENA</a>
+              </div>
+            </div>
+
+            <div class="tags rv" style="transition-delay:.22s">
+              <span class="tag" onclick="bTag(this)" data-title="Penetration Tester"
+                data-info="Auditing networks, reverse engineering systems, and conducting detailed risk analyses.">PENTESTER</span>
+              <span class="tag" onclick="bTag(this)" data-title="CTF Player"
+                data-info="Actively conquering binary exploitation, cryptography, and reverse engineering flags.">CTF
+                PLAYER</span>
+              <span class="tag" onclick="bTag(this)" data-title="Full Stack Developer"
+                data-info="Coding modular backend servers, databases, and highly responsive interactive web shells.">FULL
+                STACK</span>
+              <span class="tag" onclick="bTag(this)" data-title="Red Team Specialist"
+                data-info="Simulating high-threat adversary workflows to build robust network defenses.">RED TEAM</span>
+              <span class="tag" onclick="bTag(this)" data-title="AI System Builder"
+                data-info="Deploying customized large language models, vector stores, and custom RAG chains.">AI
+                BUILDER</span>
+              <span class="tag" onclick="bTag(this)" data-title="Quiz Host & Master"
+                data-info="Drafting mind-bending trivia queries and managing live stage scoring interfaces.">QUIZ
+                HOST</span>
+              <span class="tag" onclick="bTag(this)" data-title="Graphic & UI Designer"
+                data-info="Curating dark sci-fi aesthetics, fluid UI grids, and high-impact event vectors.">DESIGNER</span>
+              <span class="tag" onclick="bTag(this)" data-title="Public Speaker"
+                data-info="Coordinating live stage operations and presenting technical workshops on offensive cyber security.">PUBLIC
+                SPEAKER</span>
+              <span class="tag" onclick="bTag(this)" data-title="Portal Gun State"
+                data-info="Wubba Lubba Dub Dub! System parameters operating at maximum legendary levels.">PORTAL GUN:
+                LOADED</span>
+            </div>
+          </div>
+          <div class="h-stats rv" style="transition-delay:.26s">
+            <div class="hstat" data-title="Academic Status"
+              data-info="Pursuing a Bachelor of Engineering in Computer Science (Graduating in 2028)."><span
+                class="hstat-n">2028</span><span class="hstat-l">Grad</span></div>
+            <div class="hstat" data-title="Competitive Coding"
+              data-info="Regularly auditing platforms and executing capture-the-flag network challenges."><span
+                class="hstat-n">CTF</span><span class="hstat-l">Active</span></div>
+            <div class="hstat" data-title="Professional Badges"
+              data-info="Google Cybersec Foundation, TryHackMe 101, and Unreal Engine Blueprint certificates unlocked.">
+              <span class="hstat-n">4+</span><span class="hstat-l">Certs</span>
+            </div>
+            <div class="hstat" data-title="Stage Productions"
+              data-info="Successfully hosted Grey Matter QDC trivia nights and Incridea college fest events."><span
+                class="hstat-n">2+</span><span class="hstat-l">Events Hosted</span></div>
+            <div class="hstat" data-title="Inquiry Metric"
+              data-info="Endless capacity for hacking deep hardware layers and styling glowing cyber interfaces."><span
+                class="hstat-n">&#8734;</span><span class="hstat-l">Curiosity</span></div>
+          </div>
+        </div>
+
+        <!-- HERO RIGHT — PROFILE PHOTO SURROUNDED BY DYNAMIC TERMINAL DIAGNOSTIC LOGS -->
+        <div class="hero-right">
+          <!-- Top Terminal Diagnostics -->
+          <div class="term rv"
+            style="margin: 0; font-size: 8px; line-height: 1.5; border-color: rgba(8,8,8,0.1); background: rgba(0,0,0,0.03);"
+            data-title="Terminal Diagnostics"
+            data-info="Diagnostic logs displaying core academic targets, active club roles, and developer traits.">
+            <div><span class="p" style="color:var(--hot);">C:\SARVASVA&gt;</span> whoami</div>
+            <div class="o" style="color:rgba(8,8,8,0.7);">&rarr; CS Undergrad @ NMAMIT, Nitte</div>
+            <div class="o" style="color:rgba(8,8,8,0.7);">&rarr; Cybersec + Full-Stack + AI + Designer</div>
+          </div>
+
+          <!-- Center Photo Zone -->
+          <div class="photo-zone">
+            <!-- Orbiting rings -->
+            <div class="photo-decor-ring ring-outer"></div>
+            <div class="photo-decor-ring ring-mid"></div>
+            <div class="photo-decor-ring ring-inner"></div>
+
+            <!-- Corner Brackets -->
+            <div class="photo-bracket bracket-tl"></div>
+            <div class="photo-bracket bracket-tr"></div>
+            <div class="photo-bracket bracket-bl"></div>
+            <div class="photo-bracket bracket-br"></div>
+
+            <!-- Cyber Telemetry overlays -->
+            <div class="photo-telemetry tel-top-left">SYS_STATUS: ENGAGED<br>GRID_COORD: 42.88.99</div>
+            <div class="photo-telemetry tel-top-right">TRAJECTORY: STABLE<br>OPERATOR_ID: SRX_12</div>
+            <div class="photo-telemetry tel-bottom-left">CORE_TEMP: NOMINAL<br>RECEPTOR: ACTIVE</div>
+            <div class="photo-telemetry tel-bottom-right">HZ_FREQ: 2.45 GHz<br>ENCRYPTION: SHIELDED</div>
+
+            <!-- Clickable Photo Container -->
+            <div id="profilePhotoContainer" class="photo-container rv sr"
+              style="transition-delay:.22s; width: 170px; height: 170px; border-radius: 50%; overflow: hidden; border: 4px solid #000; box-shadow: 4px 4px 0 var(--hot); position: relative; z-index: 2; cursor: pointer; margin: 0 auto;"
+              data-title="Personal Profile Photo" data-info="Sarvasva's verified operator portrait. Click to interact!">
+              <img src="user_profile.png" alt="Sarvasva Profile"
+                style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">
+            </div>
+
+            <!-- Dialogue bubble -->
+            <div id="pokeDialog" class="poke-bubble" style="top: 20px; left: 52%;">STOP TOUCHING ME!</div>
+          </div>
+
+          <!-- Bottom Terminal Diagnostics -->
+          <div class="term rv"
+            style="margin: 0; font-size: 8px; line-height: 1.5; border-color: rgba(8,8,8,0.1); background: rgba(0,0,0,0.03);"
+            data-title="Mission Telemetry" data-info="Hacking targets, club records, and software metrics.">
+            <div><span class="p" style="color:var(--hot);">C:\SARVASVA&gt;</span> cat mission.txt</div>
+            <div class="o" style="color:rgba(8,8,8,0.7);">&rarr; Break things ethically. Build things that matter.</div>
+            <div><span class="p" style="color:var(--hot);">C:\SARVASVA&gt;</span> ls ./clubs/</div>
+            <div class="o" style="color:rgba(8,8,8,0.7);">&rarr; Grey Matter QDC &nbsp;|&nbsp; Incridea '26</div>
+          </div>
+
+          <!-- Bar Stats -->
+          <div class="poster-bar" style="background:#000; border-top: 2px solid var(--hot); padding: 6px 12px;">
+            <div class="pb-quote rv" style="transition-delay:.3s; color:#fff;" data-title="Rick Sanchez Quote"
+              data-info="Active console broadcast node.">"I'M DEVELOPER RICK!"</div>
+            <div class="pb-right">
+              <span class="pb-hp-label">HP</span>
+              <div class="pb-track">
+                <div class="pb-fill"></div>
+              </div>
+              <span id="clk">00:00:00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="scroll-hint">scroll to explore <span class="sh-arr">&#8595;</span></div>
+    </section>
+
+    <!-- S1: PLAYER STATS (ABOUT ME RIGHT AFTER HOME) -->
+    <section class="snap-sec" id="s1">
+      <div class="sec-hdr">
+        <div class="sec-num">01</div>
+        <div class="sec-title rv sl">PLAYER <em>STATS</em></div>
+      </div>
+      <div class="sec-body" style="padding:3px; position:relative;">
+        <!-- Cyber Sticker stamp -->
+        <svg class="cyber-badge" style="top: -22px; right: 55px; transform: rotate(14deg);" viewBox="0 0 100 100"
+          data-title="System Operator Certified Sticker"
+          data-info="Hacker credentials initialized. System integrity check operating at 100% efficiency.">
+          <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="var(--ink)" stroke="var(--acid)" stroke-width="4" />
+          <circle cx="50" cy="50" r="28" fill="none" stroke="var(--acid)" stroke-dasharray="3 3" stroke-width="2" />
+          <text x="50" y="46" font-family="'Space Grotesk'" font-size="10" font-weight="bold" fill="var(--acid)"
+            text-anchor="middle" letter-spacing="1">SYS_OP</text>
+          <text x="50" y="62" font-family="'Space Grotesk'" font-size="10" font-weight="bold" fill="var(--acid)"
+            text-anchor="middle" letter-spacing="1">ACTIVE</text>
+        </svg>
+        <div class="asplit">
+          <div class="aleft">
+            <div class="statg rv">
+              <div class="stc" data-title="Graduation Quest"
+                data-info="On track to finalize CS engineering degree layers in 2028."><span
+                  class="stbig">2028</span><span class="stsm">Graduation</span></div>
+              <div class="stc" data-title="Hacking Activity"
+                data-info="Regularly auditing platforms and executing capture-the-flag network challenges."><span
+                  class="stbig">CTF</span><span class="stsm">Active</span></div>
+              <div class="stc" data-title="Credentials Block"
+                data-info="4+ global security and framework certifications acquired and validated."><span
+                  class="stbig">4+</span><span class="stsm">Certs</span></div>
+              <div class="stc" data-title="Curiosity Curve"
+                data-info="Hacking deep hardware loops and styling interfaces forever."><span
+                  class="stbig">&#8734;</span><span class="stsm">Curiosity</span></div>
+            </div>
+            <div style="height:3px;background:rgba(245,240,232,.08);margin:3px 0"></div>
+            <div class="term rv" style="transition-delay:.1s" data-title="Clubs & Affiliations"
+              data-info="Clubs, committees, and publicity networks.">
+              <div><span class="p">C:\SARVASVA&gt;</span> ls ./clubs/</div>
+              <div class="o">&rarr; Grey Matter QDC (Design + Quiz) &nbsp;&#183;&nbsp; Incridea '26 (Publicity)</div>
+              <div><span class="p">C:\SARVASVA&gt;</span> whoami</div>
+              <div class="o">&rarr; CS Undergrad @ NMAM Institute of Technology, Nitte</div>
+            </div>
+            <div class="term rv" style="transition-delay:.15s" data-title="Professional Logs"
+              data-info="System history: Asynchronous hardware development and prompt framework designs.">
+              <div><span class="p">C:\SARVASVA&gt;</span> cat experience.txt</div>
+              <div class="o">&rarr; Software Dev Intern — AIC NITTE Incubation Center</div>
+              <div class="o">&rarr; Jun–Aug 2024 · Hardware + Arduino + Prompt Engineering</div>
+            </div>
+          </div>
+          <div class="aright">
+            <div
+              style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:4px;color:rgba(245,240,232,.28);margin-bottom:10px">
+              ACHIEVEMENTS UNLOCKED</div>
+            <div class="certs rv">
+              <div class="cert" data-title="Google Credential"
+                data-info="Google Cybersecurity Professional Certification. Network defense, incident response, and Unix logging.">
+                Google: Cybersecurity Foundations</div>
+              <div class="cert" data-title="TryHackMe Rank"
+                data-info="TryHackMe Cybersecurity 101. Auditing web injection layers, active scans, and cryptos.">
+                TryHackMe: Cybersecurity 101</div>
+              <div class="cert" data-title="Hacking Badge"
+                data-info="Ethical Hacking course by ZSecurity. Sockets, reverse proxies, and trojans.">ZSecurity:
+                Ethical Hacking From Scratch</div>
+              <div class="cert" data-title="UE5 Engine Developer"
+                data-info="Unreal Engine Blueprint Developer certification. Compiling virtual physics nodes and 3D visual environments.">
+                Unreal Engine Blueprint Developer</div>
+            </div>
+            <div
+              style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:4px;color:rgba(245,240,232,.28);margin:11px 0 9px">
+              OPEN TO COLLABORATE</div>
+            <div class="cbtns rv" style="transition-delay:.12s">
+              <a href="mailto:sarvasva5758@gmail.com" class="cbtn" data-title="Direct Mail Connection"
+                data-info="Send a secure connection request directly to sarvasva5758@gmail.com.">✉
+                &nbsp;sarvasva5758@gmail.com<span class="arr">&rarr;</span></a>
+              <a href="https://linkedin.com/in/sarvasva-s-4470562b4" class="cbtn" target="_blank" rel="noopener"
+                data-title="LinkedIn Hub" data-info="Connect via professional profile pathways on LinkedIn.">⬥
+                &nbsp;LinkedIn<span class="arr">&rarr;</span></a>
+              <a href="https://github.com/scrxtch12418" class="cbtn" target="_blank" rel="noopener"
+                data-title="GitHub Matrix"
+                data-info="Browse active code blocks, AI libraries, and retro script modules on GitHub.">⌥ &nbsp;GitHub
+                / scrxtch12418<span class="arr">&rarr;</span></a>
+              <a href="tel:+918618971296" class="cbtn" data-title="Mobile Shell Direct"
+                data-info="Dial the direct operator mobile voice pipeline at +91 861 897 1296.">☎ &nbsp;+91 861 897
+                1296<span class="arr">&rarr;</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- S2: SKILLS -->
+    <section class="snap-sec" id="s2">
+      <div class="sec-hdr">
+        <div class="sec-num">02</div>
+        <div class="sec-title rv sl">SKILL <em>TREE</em></div>
+      </div>
+      <div class="sec-body">
+        <div class="sg">
+          <div class="sk rv" style="transition-delay:.05s">
+            <div class="sk-title">CYBER / OFFENSE</div>
+            <div class="sk-list">
+              <div class="sk-item">Penetration Testing <span style="color:var(--hot)">[READY]</span></div>
+              <div class="sk-item">Red Teaming <span style="color:var(--hot)">[READY]</span></div>
+              <div class="sk-item">Network Engineering <span style="color:var(--hot)">[READY]</span></div>
+              <div class="sk-item">LLM Security <span style="color:var(--hot)">[READY]</span></div>
+              <div class="sk-item">Vulnerability Analysis <span style="color:var(--hot)">[READY]</span></div>
+            </div>
+            <div class="brow">
+              <span class="badge" data-title="Exploitation Suite"
+                data-info="Metasploit: Premier active cyber vulnerability execution framework.">Metasploit</span>
+              <span class="badge" data-title="Cyber OS Platform"
+                data-info="Kali Linux: Offensive platform for auditing hardware and software endpoints.">Kali
+                Linux</span>
+              <span class="badge" data-title="Security Standard"
+                data-info="OWASP: Top 10 vulnerabilities auditor tracking web data breaches.">OWASP</span>
+              <span class="badge" data-title="Packet Analyzer"
+                data-info="Wireshark: Analyzing deep network streams, protocol packets, and frame handshakes.">Wireshark</span>
+            </div>
+          </div>
+          <div class="sk rv" style="transition-delay:.1s">
+            <div class="sk-title">LANGUAGES</div>
+            <div class="sk-list">
+              <div class="sk-item">Python <span style="color:var(--acid)">[READY]</span></div>
+              <div class="sk-item">JavaScript <span style="color:var(--acid)">[READY]</span></div>
+              <div class="sk-item">Java <span style="color:var(--acid)">[READY]</span></div>
+              <div class="sk-item">C <span style="color:var(--acid)">[READY]</span></div>
+              <div class="sk-item">C# <span style="color:var(--acid)">[READY]</span></div>
+            </div>
+            <div class="brow">
+              <span class="badge" data-title="Backend JS"
+                data-info="Node.js: High-performance V8 runtime executing scalable backend servers.">Node.js</span>
+              <span class="badge" data-title="Server Router"
+                data-info="Express: Clean routing architecture handling client APIs and REST requests.">Express</span>
+              <span class="badge" data-title="API Architecture"
+                data-info="REST API: Building standard JSON endpoints for instant network data delivery.">REST
+                API</span>
+            </div>
+          </div>
+          <div class="sk rv" style="transition-delay:.15s">
+            <div class="sk-title">DESIGN</div>
+            <div class="sk-list">
+              <div class="sk-item">Canva <span style="color:var(--cyan)">[READY]</span></div>
+              <div class="sk-item">Lightroom <span style="color:var(--cyan)">[READY]</span></div>
+              <div class="sk-item">Content Writing <span style="color:var(--cyan)">[READY]</span></div>
+              <div class="sk-item">Typography <span style="color:var(--cyan)">[READY]</span></div>
+            </div>
+            <div class="brow">
+              <span class="badge" data-title="Creative Agency"
+                data-info="Grey Matter QDC: Leading graphic campaigns and orchestrating massive stage quizzes.">Grey
+                Matter QDC</span>
+              <span class="badge" data-title="National Tech Fest"
+                data-info="Incridea '26: Designing the visual identity pack and co-hosting major stage tracks.">Incridea
+                '26</span>
+            </div>
+          </div>
+          <div class="sk rv" style="transition-delay:.2s">
+            <div class="sk-title">AI / ML</div>
+            <div class="sk-list">
+              <div class="sk-item">LLM Integration <span style="color:var(--purple)">[READY]</span></div>
+              <div class="sk-item">RAG Systems <span style="color:var(--purple)">[READY]</span></div>
+              <div class="sk-item">LSTM / ML <span style="color:var(--purple)">[READY]</span></div>
+            </div>
+            <div class="brow">
+              <span class="badge" data-title="Local AI Hub"
+                data-info="Ollama: Executing secure offline models (Llama3, Mistral) on hardware setups.">Ollama</span>
+              <span class="badge" data-title="AI Pipeline Agent"
+                data-info="LangChain: Developing structured workflows to chain prompts, tools, and data stores.">LangChain</span>
+              <span class="badge" data-title="Prompt Tuning"
+                data-info="Prompt Eng.: Structuring meta-parameters to guide neural networks into accurate outputs.">Prompt
+                Eng.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- S3: PROJECTS (QUEST LOG WITH GITHUB REDIRECTS) -->
+    <section class="snap-sec" id="s3">
+      <div class="sec-hdr">
+        <div class="sec-num">03</div>
+        <div class="sec-title rv sl">QUEST <em>LOG</em></div>
+      </div>
+      <div class="sec-body" style="position:relative;">
+        <!-- Cyber Stamp sticker -->
+        <svg class="cyber-badge" style="top: -24px; right: 50px; transform: rotate(-8deg);" viewBox="0 0 100 100"
+          data-title="Code exfiltrator badge"
+          data-info="Quest Log verified blocks. 100% of repositories successfully deployed and compiled.">
+          <circle cx="50" cy="50" r="42" fill="var(--ink)" stroke="var(--cyan)" stroke-width="4" />
+          <polygon points="50,15 85,78 15,78" fill="none" stroke="var(--cyan)" stroke-width="2" />
+          <text x="50" y="52" font-family="'Space Grotesk'" font-size="10" font-weight="bold" fill="var(--cyan)"
+            text-anchor="middle">CODE</text>
+          <text x="50" y="66" font-family="'Space Grotesk'" font-size="10" font-weight="bold" fill="var(--cyan)"
+            text-anchor="middle">DEPLOY</text>
+        </svg>
+        <div class="pg">
+          <a href="https://github.com/scrxtch12418/Projects/tree/main/Prompt%20Injection%20Checker" target="_blank"
+            rel="noopener" class="pc-link">
+            <div class="pc rv" data-n="01" data-title="LLM Security Framework"
+              data-info="Click to view Github repository. Prevent prompt injections, scan PII keys, and secure API layers.">
+              <div class="p-rarity epic">&#9670; EPIC RARITY</div>
+              <div class="p-title">LLM SECURITY FRAMEWORK</div>
+              <div class="p-desc">Red-teaming framework with input/output validation pipelines. Detects prompt injection
+                across 11 categories — API keys, SSNs, JWT tokens. Confidence scoring + severity classification. Full
+                CLI tool with test suite.</div>
+              <div class="ptags"><span class="ptag">Python</span><span class="ptag">NLP</span><span
+                  class="ptag">spaCy</span><span class="ptag">LangChain</span><span class="ptag">Red Team</span></div>
+            </div>
+          </a>
+          <a href="https://github.com/scrxtch12418/rat-research" target="_blank" rel="noopener" class="pc-link">
+            <div class="pc rv" data-n="02" style="transition-delay:.08s" data-title="RAT - Cyber Lab Research"
+              data-info="Click to view Github repository. Testing socket client connections and reverse terminal telemetry.">
+              <div class="p-rarity rare">&#9670; RARE RARITY</div>
+              <div class="p-title">RAT — ETHICAL RESEARCH</div>
+              <div class="p-desc">Python Remote Access Trojan in a controlled lab — reverse shell, remote command
+                execution, file exfiltration. Documented threat-model analysis. For ethical use only.</div>
+              <div class="ptags"><span class="ptag">Python</span><span class="ptag">Sockets</span><span
+                  class="ptag">Ethical Hacking</span><span class="ptag">Threat Modeling</span></div>
+            </div>
+          </a>
+          <a href="https://github.com/scrxtch12418/Projects/tree/main/Focus%20Extension" target="_blank" rel="noopener"
+            class="pc-link">
+            <div class="pc rv" data-n="03" style="transition-delay:.16s" data-title="ADHD Focus Node"
+              data-info="Click to view Github repository. Persistent storage timers, tab limiting, and domain blockades.">
+              <div class="p-rarity uncommon">&#9670; UNCOMMON</div>
+              <div class="p-title">ADHD FOCUS EXTENSION</div>
+              <div class="p-desc">Published Chrome extension — focus timers, site-blocking, task reminders. Chrome
+                Extensions API for persistent storage and tab management.</div>
+              <div class="ptags"><span class="ptag">HTML/CSS</span><span class="ptag">JavaScript</span><span
+                  class="ptag">Chrome API</span><span class="ptag">UX Design</span></div>
+            </div>
+          </a>
+        </div>
+        <div style="background:var(--hot);padding:12px 18px;margin-top:12px" data-title="Rick's Wisdom Broadcast"
+          data-info="Wubba Lubba Dub Dub! Make sure to take the side quests; they have the most interesting code.">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:3px;color:#fff">"That's a side
+            quest, Morty. Everything in life is a side quest."</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- S4: DESIGN GALLERY -->
+    <section class="snap-sec" id="s4">
+      <div class="sec-hdr">
+        <div class="sec-num">04</div>
+        <div class="sec-title rv sl">DESIGN <em>GALLERY</em></div>
+      </div>
+      <div class="sec-body">
+        <div class="design-info-bar">
+          <span>Grey Matter QDC &nbsp;&#183;&nbsp; Incridea '26 &nbsp;&#183;&nbsp; Event Design</span>
+          <span style="color:rgba(245,240,232,.25)">Hover to explore details & click to expand</span>
+        </div>
+
+        <div class="dg-grid">
+
+          <div class="di rv" style="transition-delay:.04s">
+            <img class="di-img" src="motley_crew_quiz.png" alt="The Motley Crew Quiz">
+            <div class="di-ov">
+              <div class="di-ov-title">THE MOTLEY CREW QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · 11th April · 9:30 AM</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.08s">
+            <img class="di-img" src="nutella_quiz.png" alt="The Nutella Quiz">
+            <div class="di-ov">
+              <div class="di-ov-title">THE NUTELLA QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · Chocolate Trivia</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.12s">
+            <img class="di-img" src="dia_de_muertos_quiz.png" alt="Día de Muertos Quiz">
+            <div class="di-ov">
+              <div class="di-ov-title">DÍA DE MUERTOS QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · Minis #18</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.16s">
+            <img class="di-img" src="starter_quiz.png" alt="The Starter Quiz">
+            <div class="di-ov">
+              <div class="di-ov-title">THE STARTER QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · 11th April · 9:30 AM</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.2s">
+            <img class="di-img" src="kbk_quiz.png" alt="Kaun Banega Khiladi?">
+            <div class="di-ov">
+              <div class="di-ov-title">KAUN BANEGA KHILADI?</div>
+              <div class="di-ov-sub">Sports & Strategy Collage Quiz</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.24s">
+            <img class="di-img" src="rewind_quiz.png" alt="Rewind Quiz Poster">
+            <div class="di-ov">
+              <div class="di-ov-title">REWIND QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · Pop Culture Trivia</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.28s">
+            <img class="di-img" src="studio99.png" alt="Studio 99 Salon Poster">
+            <div class="di-ov">
+              <div class="di-ov-title">STUDIO 99</div>
+              <div class="di-ov-sub">Unisex Salon · Identity Graphics</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.32s">
+            <img class="di-img" src="videogames_quiz.png" alt="Video Games Quiz Poster">
+            <div class="di-ov">
+              <div class="di-ov-title">VIDEO GAMES QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · Minis #11</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.36s">
+            <img class="di-img" src="theoffice_quiz.png" alt="The Office Quiz Poster">
+            <div class="di-ov">
+              <div class="di-ov-title">THE OFFICE QUIZ</div>
+              <div class="di-ov-sub">Grey Matter Presents · Dunder Mifflin Trivia</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.4s">
+            <img class="di-img" src="join_us_liquid.png" alt="Grey Matter Recruitment Liquid Poster">
+            <div class="di-ov">
+              <div class="di-ov-title">GREY MATTER RECRUITMENT</div>
+              <div class="di-ov-sub">Join Us ·</div>
+            </div>
+          </div>
+
+          <div class="di rv" style="transition-delay:.44s">
+            <img class="di-img" src="join_us_waves.png" alt="Grey Matter Recruitment Waves Poster">
+            <div class="di-ov">
+              <div class="di-ov-title">GREY MATTER RECRUITMENT</div>
+              <div class="di-ov-sub">Join Us ·</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- S5: SPEAKING & HOSTING (WITH EXPANDABLE PHOTO GRIDS) -->
+    <section class="snap-sec" id="s5">
+      <div class="sec-hdr">
+        <div class="sec-num">05</div>
+        <div class="sec-title rv sl">SPEAKING <em>&amp; HOSTING</em></div>
+      </div>
+      <div class="sec-body" style="position:relative;">
+        <!-- Megaphone / Stage Badge -->
+        <svg class="cyber-badge" style="top: -24px; right: 50px; transform: rotate(12deg);" viewBox="0 0 100 100"
+          data-title="Stage Master certified sticker"
+          data-info="Hosted Grey Matter QDC and Incridea. Engaging national crowds and managing real-time stages.">
+          <circle cx="50" cy="50" r="42" fill="var(--ink)" stroke="var(--pink)" stroke-width="4" />
+          <path d="M30,42 L42,42 L54,30 L54,70 L42,58 L30,58 Z" fill="none" stroke="var(--pink)" stroke-width="3" />
+          <path d="M62,40 C68,45 68,55 62,60" fill="none" stroke="var(--pink)" stroke-width="3"
+            stroke-linecap="round" />
+          <text x="50" y="86" font-family="'Space Grotesk'" font-size="8" font-weight="bold" fill="var(--pink)"
+            text-anchor="middle" letter-spacing="1">STAGE OK</text>
+        </svg>
+        <div
+          style="background:rgba(0,255,234,.06);border-left:4px solid var(--cyan);padding:8px 14px;margin-bottom:12px"
+          data-title="Stage Metrics"
+          data-info="Audience metrics: 500+ attendees engaged across various public hosting and technical demonstration modules.">
+          <span
+            style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(0,255,234,.5);text-transform:uppercase">Public
+            speaking &nbsp;&#183;&nbsp; Event hosting &nbsp;&#183;&nbsp; Quiz mastering &nbsp;&#183;&nbsp; Stage
+            presence</span>
+        </div>
+        <div class="speak-grid">
+
+          <div class="speak-card rv" data-icon="🎙" style="transition-delay:.05s"
+            data-title="Grey Matter QDC Quiz Nights"
+            data-info="Commanded the spotlight as Quiz Master, directing real-time score grids and managing team dynamics.">
+            <div class="speak-type">Quiz Master</div>
+            <div class="speak-title">GREY MATTER QDC QUIZ NIGHTS</div>
+            <div class="speak-meta">Grey Matter QDC &nbsp;&#183;&nbsp; NMAM Institute &nbsp;&#183;&nbsp; Ongoing</div>
+            <div class="speak-desc">Hosted multiple intra-college and inter-college quizzes as Quiz Master for the Grey
+              Matter Quiz & Debate Club. Wrote questions, managed rounds, kept audience energy high, and handled live
+              judging.</div>
+
+            <!-- Grid inside card to add multiple photos under one event -->
+            <div class="speak-img-grid">
+              <div class="speak-img-wrapper"><img src="motley_crew_quiz.png" alt="Quiz Night Scene 1"></div>
+              <div class="speak-img-wrapper"><img src="nutella_quiz.png" alt="Quiz Night Scene 2"></div>
+              <div class="speak-img-wrapper"><img src="starter_quiz.png" alt="Quiz Night Scene 3"></div>
+            </div>
+
+            <div class="speak-tags"><span class="speak-tag">Quiz Master</span><span class="speak-tag">Audience
+                Mgmt</span><span class="speak-tag">Live Judging</span></div>
+          </div>
+
+          <div class="speak-card rv" data-icon="🎉" style="transition-delay:.1s" data-title="Incridea '26 Host"
+            data-info="Managed stage flows, introduced high-level panels, and hyped over 1000+ national-level attendees.">
+            <div class="speak-type">Event Co-Host</div>
+            <div class="speak-title">INCRIDEA '26 SIDE EVENTS</div>
+            <div class="speak-meta">Incridea '26 Tech Fest &nbsp;&#183;&nbsp; NMAM Institute &nbsp;&#183;&nbsp; 2026
+            </div>
+            <div class="speak-desc">Co-hosted side events at the annual inter-college tech fest Incridea '26.
+              Coordinated event flow during flashmobs, introduced various events and committees, managed transitions
+              between segments, and
+              engaged a large inter-college audience.</div>
+
+            <!-- Grid inside card to add multiple photos under one event -->
+            <div class="speak-img-grid">
+              <div class="speak-img-wrapper"><img src="incridea_poster.png" alt="Incridea Scene 1"></div>
+              <div class="speak-img-wrapper"><img src="dia_de_muertos_quiz.png" alt="Incridea Scene 2"></div>
+              <div class="speak-img-wrapper"><img src="kbk_quiz.png" alt="Incridea Scene 3"></div>
+            </div>
+
+            <div class="speak-tags"><span class="speak-tag">Co-Host</span><span class="speak-tag">Stage Mgmt</span><span
+                class="speak-tag">Inter-college</span></div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- S6: QUIZ -->
+    <section class="snap-sec" id="s6">
+      <div class="sec-hdr">
+        <div class="sec-num">06</div>
+        <div class="sec-title rv sl">QUIZ <em>ARENA</em></div>
+      </div>
+      <div class="qwrap">
+        <div id="qgame">
+          <div class="qmeta">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:rgba(245,240,232,.3)">
+              CAN YOU BEAT THE QUIZ MASTER?</div>
+            <div class="qscore">SCORE: <span id="sv">0</span>/<span id="st">8</span></div>
+          </div>
+          <div class="qpips" id="qpips"></div>
+          <div style="height:13px"></div>
+          <div class="qtxt" id="qtxt"></div>
+          <div class="qopts" id="qopts"></div>
+          <div class="qfb" id="qfb"></div>
+          <button class="qnxt" id="qnxt" onclick="nextQ()">NEXT QUESTION &rarr;</button>
+        </div>
+        <div class="qres" id="qres">
+          <span class="rlabel">FINAL SCORE</span>
+          <span class="rscore" id="rsc">0</span>
+          <div class="rmsg" id="rmsg"></div>
+          <button class="rbtn" onclick="initQ()">&#8617; PLAY AGAIN</button>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /scroller -->
+
+  <!-- LIGHTBOX MODAL FOR DESIGNS -->
+  <div id="designModal">
+    <button id="modalClose">CLOSE [ESC]</button>
+    <img id="modalImg" src="" alt="Full Design View">
+    <div id="modalCap"></div>
+  </div>
+
+  <script src="sarvasva_portfolio_v2.js"></script>
+</body>
+
+</html>

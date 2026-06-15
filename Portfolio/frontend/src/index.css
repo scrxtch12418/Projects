@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --pastel-pink: #FFB5E8;
+  --pastel-green: #AFF8D8;
+  --pastel-blue: #85E3FF;
+  --pastel-yellow: #FFF5BA;
+  --pastel-purple: #D5AAFF;
+  --neon-pink: #FF007F;
+  --neon-cyan: #00FFFF;
+  --bg-dark: #121212;
+  --text-light: #F0F0F0;
+  
+  --brutal-border: 4px solid #000;
+  --brutal-shadow: 6px 6px 0px #000;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  cursor: none !important; /* Hide default cursor for custom one */
+}
+
+body {
+  font-family: 'Space Mono', monospace;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  overflow: hidden; /* Hide body scroll, handle in App container */
+}
+
+h1, h2, h3, h4, .retro-font {
+  font-family: 'Press Start 2P', cursive;
+  text-transform: uppercase;
+}
+
+/* Scroll Snapping Container */
+.snap-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  position: relative;
+  z-index: 1;
+}
+
+/* Common Section Styles */
+.section {
+  scroll-snap-align: start;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 4rem;
+  border-bottom: var(--brutal-border);
+  position: relative;
+}
+
+/* Brutalist Card Styles */
+.brutal-card {
+  background-color: var(--text-light);
+  color: #000;
+  border: var(--brutal-border);
+  box-shadow: var(--brutal-shadow);
+  padding: 2rem;
+  transition: transform 0.1s ease;
+}
+
+.brutal-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000;
+}
+
+.brutal-button {
+  background-color: var(--pastel-pink);
+  border: var(--brutal-border);
+  box-shadow: 4px 4px 0px #000;
+  padding: 1rem 2rem;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  text-decoration: none;
+  color: #000;
+  display: inline-block;
+  margin-top: 1rem;
+}
+.brutal-button:hover {
+  background-color: var(--pastel-blue);
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #000;
+}
+
+/* CRT Theme Effects */
+.crt::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 999;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+.crt::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.glitch-text {
+  text-shadow: 2px 0px var(--neon-cyan), -2px 0px var(--neon-pink);
+}
+
+/* Custom Cursor */
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background-color: var(--neon-pink);
+  border: 2px solid #000;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.1s, height 0.1s;
+}
+
+.custom-cursor.hover {
+  width: 30px;
+  height: 30px;
+  background-color: var(--neon-cyan);
+  border-radius: 0; /* Becomes a square on hover */
+}
+
+/* Video Game Specifics */
+.health-bar-container {
+  width: 100%;
+  height: 20px;
+  border: 2px solid #000;
+  background-color: #333;
+  margin-top: 5px;
+}
+
+.health-bar-fill {
+  height: 100%;
+  background-color: var(--pastel-green);
+  border-right: 2px solid #000;
+}
+
+/* Platformer character */
+.platformer-char {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  background-color: var(--pastel-yellow);
+  border: 2px solid #000;
+  z-index: 998;
+  transition: left 0.1s linear, top 0.1s linear;
+}
+
+/* Utility Colors for Sections */
+.bg-pink { background-color: var(--pastel-pink); color: #000; }
+.bg-green { background-color: var(--pastel-green); color: #000; }
+.bg-blue { background-color: var(--pastel-blue); color: #000; }
+.bg-yellow { background-color: var(--pastel-yellow); color: #000; }
+.bg-purple { background-color: var(--pastel-purple); color: #000; }
