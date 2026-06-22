@@ -249,6 +249,23 @@
       card.style.zIndex = String(designCards.length - index);
     });
 
+    // Initialize 3D spiral dots for S4 Design Gallery
+    var designDotsContainer = null;
+    var designDotsCount = 80;
+    var designDots = [];
+    if (spiralStage) {
+      designDotsContainer = document.createElement('div');
+      designDotsContainer.className = 'spiral-dots-container';
+      designDotsContainer.style.setProperty('--dot-color', 'var(--hot)');
+      spiralStage.appendChild(designDotsContainer);
+      for (var dIdx = 0; dIdx < designDotsCount; dIdx++) {
+        var dot = document.createElement('span');
+        dot.className = 'spiral-dot';
+        designDotsContainer.appendChild(dot);
+        designDots.push(dot);
+      }
+    }
+
     function updateDesignSpiral() {
       spiralTicking = false;
       if (!designSection || !spiralStage || !designCards.length) return;
@@ -277,6 +294,25 @@
         card.classList.toggle('is-active', index === activeIndex);
         card.classList.toggle('is-near', absDistance < .72);
       });
+
+      // Update dots positions in S4 Design Spiral
+      if (designDots.length) {
+        var t_min = -0.5 - cardProgress;
+        var t_max = (designCards.length - 1) + 0.5 - cardProgress;
+        designDots.forEach(function (dot, index) {
+          var t = t_min + (index / (designDots.length - 1)) * (t_max - t_min);
+          var angle = t * 1.05;
+          var absT = Math.abs(t);
+          var x = Math.sin(angle) * radiusX;
+          var y = t * verticalStep + Math.cos(angle) * 16;
+          var z = Math.cos(angle) * 115 - absT * 105;
+          var scale = Math.max(.42, 1 - absT * .18 + Math.cos(angle) * .035);
+          var opacity = Math.max(0, Math.min(1, 1.12 - absT * .27));
+
+          dot.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
+          dot.style.opacity = opacity.toFixed(3);
+        });
+      }
 
       if (spiralCurrent) spiralCurrent.textContent = String(activeIndex + 1).padStart(2, '0');
       spiralStage.style.setProperty('--spiral-progress', sectionProgress.toFixed(3));
@@ -345,11 +381,32 @@
         item.style.removeProperty('transition-delay');
       });
 
+      // Initialize 3D spiral dots for this section
+      var dotsContainer = document.createElement('div');
+      dotsContainer.className = 'spiral-dots-container';
+      var dotColor = 'var(--cyan)';
+      if (config.id === 's1') dotColor = 'var(--acid)';
+      else if (config.id === 's2') dotColor = 'var(--cyan)';
+      else if (config.id === 's3') dotColor = 'var(--purple)';
+      else if (config.id === 's5') dotColor = 'var(--pink)';
+      dotsContainer.style.setProperty('--dot-color', dotColor);
+      stage.appendChild(dotsContainer);
+
+      var sectionDotsCount = 45;
+      var dots = [];
+      for (var dIdx = 0; dIdx < sectionDotsCount; dIdx++) {
+        var dot = document.createElement('span');
+        dot.className = 'spiral-dot';
+        dotsContainer.appendChild(dot);
+        dots.push(dot);
+      }
+
       sectionSpirals.push({
         section: section,
         stage: stage,
         items: items,
-        current: progress.querySelector('span')
+        current: progress.querySelector('span'),
+        dots: dots
       });
     });
 
@@ -382,6 +439,25 @@
           item.classList.toggle('section-item-near', absDistance < .7);
         });
 
+        // Update dots positions in Section Spiral
+        if (spiral.dots && spiral.dots.length) {
+          var t_min = -0.5 - itemProgress;
+          var t_max = (spiral.items.length - 1) + 0.5 - itemProgress;
+          spiral.dots.forEach(function (dot, index) {
+            var t = t_min + (index / (spiral.dots.length - 1)) * (t_max - t_min);
+            var angle = t * 1.08;
+            var absT = Math.abs(t);
+            var x = Math.sin(angle) * radiusX;
+            var y = t * verticalStep + Math.cos(angle) * 12;
+            var z = Math.cos(angle) * 100 - absT * 125;
+            var scale = Math.max(.48, .94 - absT * .2 + Math.cos(angle) * .035);
+            var opacity = Math.max(0, Math.min(1, 1.08 - absT * .35));
+
+            dot.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,' + z.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
+            dot.style.opacity = opacity.toFixed(3);
+          });
+        }
+
         spiral.current.textContent = String(activeIndex + 1).padStart(2, '0');
         spiral.stage.style.setProperty('--section-progress', sectionProgress.toFixed(3));
       });
@@ -396,6 +472,56 @@
     scr.addEventListener('scroll', requestSectionSpiralUpdate, { passive: true });
     window.addEventListener('resize', requestSectionSpiralUpdate);
     updateSectionSpirals();
+
+    /* 3D TILT EFFECT FOR CARDS */
+    function initCardTilt() {
+      var cards = document.querySelectorAll('.section-spiral-item, .dg-grid .di');
+      cards.forEach(function (card) {
+        if (card.closest('#s6')) return;
+
+        var rect = null;
+        var tiltTicking = false;
+
+        card.addEventListener('mouseenter', function () {
+          rect = card.getBoundingClientRect();
+        });
+
+        card.addEventListener('mousemove', function (e) {
+          if (!rect) rect = card.getBoundingClientRect();
+          var clientX = e.clientX;
+          var clientY = e.clientY;
+
+          if (!tiltTicking) {
+            tiltTicking = true;
+            requestAnimationFrame(function () {
+              if (!rect) {
+                tiltTicking = false;
+                return;
+              }
+              var x = clientX - rect.left;
+              var y = clientY - rect.top;
+              var centerX = rect.width / 2;
+              var centerY = rect.height / 2;
+              var deltaX = (x - centerX) / centerX;
+              var deltaY = (y - centerY) / centerY;
+
+              var maxRotation = 10; // Subtle rotation
+              var rx = deltaY * maxRotation;
+              var ry = -deltaX * maxRotation;
+
+              card.style.setProperty('--tilt-transform', 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg) translateZ(25px)');
+              tiltTicking = false;
+            });
+          }
+        });
+
+        card.addEventListener('mouseleave', function () {
+          rect = null;
+          card.style.removeProperty('--tilt-transform');
+        });
+      });
+    }
+    initCardTilt();
 
     /* REVEAL */
     function triggerReveal(secId) {
