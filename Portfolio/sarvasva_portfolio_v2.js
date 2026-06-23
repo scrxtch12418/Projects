@@ -632,6 +632,27 @@
       });
     });
 
+    // LIGHTBOX FOR SPEAKING & HOSTING SINGLE PHOTO CARDS
+    document.querySelectorAll('.speak-photo-single').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        e.stopPropagation(); // prevent card triggering or spiral scrolling issues
+        var img = card.querySelector('img');
+        var title = card.getAttribute('data-title') || "Speaking / Hosting";
+        var sub = card.querySelector('.speak-photo-caption') ? card.querySelector('.speak-photo-caption').textContent : (img ? img.alt : "Photo");
+
+        if (img) {
+          modalImg.src = img.src;
+          modalCap.textContent = title + ' — ' + sub;
+          modal.style.display = 'flex';
+          modalImg.style.transform = 'rotate(' + (Math.random() * 4 - 2) + 'deg) scale(0.95)';
+          setTimeout(function () {
+            modalImg.style.transition = 'transform 0.3s cubic-bezier(0.19, 1, 0.22, 1)';
+            modalImg.style.transform = 'rotate(' + (Math.random() * 2 - 1) + 'deg) scale(1)';
+          }, 50);
+        }
+      });
+    });
+
     document.getElementById('modalClose').addEventListener('click', function () {
       modal.style.display = 'none';
     });

@@ -1780,6 +1780,70 @@
       text-transform: uppercase
     }
 
+    /* Style adjustments for speak-photo-single and single image cards */
+    .speak-photo-single {
+      border-color: var(--pink) !important;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .speak-photo-single:hover {
+      background: var(--pink) !important;
+      border-color: #000 !important;
+    }
+
+    .speak-photo-single .speak-type {
+      color: var(--pink) !important;
+      text-shadow: 0 0 8px var(--pink) !important;
+      margin-bottom: 2px;
+    }
+
+    .speak-photo-single:hover .speak-type {
+      color: #000 !important;
+      text-shadow: none !important;
+    }
+
+    .speak-img-single-wrapper {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      overflow: hidden;
+      border: 1px solid rgba(245, 240, 232, 0.15);
+      position: relative;
+    }
+
+    .speak-img-single-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: filter 0.22s, transform 0.22s;
+      filter: saturate(0.7) contrast(1.1) brightness(0.95);
+    }
+
+    .speak-photo-single:hover .speak-img-single-wrapper img {
+      filter: saturate(1.1) contrast(1.1) brightness(1.05);
+      transform: scale(1.05);
+    }
+
+    .speak-photo-single:hover .speak-img-single-wrapper {
+      border-color: #000 !important;
+    }
+
+    .speak-photo-caption {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.85);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: auto;
+    }
+
+    .speak-photo-single:hover .speak-photo-caption {
+      color: #000 !important;
+    }
+
     .speak-add-placeholder {
       background: rgba(0, 255, 234, .04);
       border: 2px dashed rgba(0, 255, 234, .2);
@@ -2610,7 +2674,7 @@
       border-color: var(--cyan);
       box-shadow: 0 0 0 1px var(--ink), 10px 10px 0 var(--cyan), 0 0 34px rgba(0, 255, 234, .22);
       filter: saturate(1.12) brightness(1.04);
-      transition: transform 0s !important, border-color .2s ease, box-shadow .2s ease, filter .2s ease, opacity .12s linear !important;
+      transition: transform 0s, border-color .2s ease, box-shadow .2s ease, filter .2s ease, opacity .12s linear !important;
     }
 
     @keyframes spiralHintPulse {
@@ -2748,7 +2812,7 @@
     }
 
     .section-spiral-item:hover {
-      transition: transform 0s !important, opacity .12s linear, border-color .2s ease, box-shadow .2s ease, filter .2s ease !important;
+      transition: transform 0s, opacity .12s linear, border-color .2s ease, box-shadow .2s ease, filter .2s ease !important;
     }
 
     .section-spiral-item.section-item-active {
