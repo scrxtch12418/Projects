@@ -87,6 +87,7 @@
     if (finished) return;
     finished = true;
     cancelAnimationFrame(animationFrame);
+    window.removeEventListener('resize', onBootResize);
     meter.style.width = '100%';
     percent.textContent = '100%';
     status.textContent = 'SIGNAL LOCKED // ENTERING';
@@ -104,87 +105,170 @@
     }, reducedMotion ? 400 : 1150);
   }
 
-  resizeBootCanvas();
-  seedDrops();
-  window.addEventListener('resize', function () {
+  function onBootResize() {
     resizeBootCanvas();
     seedDrops();
-  });
+  }
+
+  resizeBootCanvas();
+  seedDrops();
+  window.addEventListener('resize', onBootResize);
   animationFrame = requestAnimationFrame(drawBoot);
 }());
 
 /* CURSOR & GENERAL ANIMATION LOOP */
+    var isMobile = window.matchMedia('(max-width: 768px)').matches;
     var cD = document.getElementById('cDot'), cR = document.getElementById('cRing');
-    var mx = 0, my = 0, rx = 0, ry = 0;
-    document.addEventListener('mousemove', function (e) {
-      mx = e.clientX; my = e.clientY;
-      cD.style.left = mx + 'px'; cD.style.top = my + 'px';
-
-      // Sleek glowing red trace particles instead of multicolored confetti
-      if (Math.random() < 0.33) {
-        var t = document.createElement('div');
-        t.className = 'pxt';
-        var sz = (Math.random() * 4 + 4) + 'px';
-        t.style.width = sz;
-        t.style.height = sz;
-        t.style.left = (mx - parseInt(sz) / 2 + Math.random() * 8 - 4) + 'px';
-        t.style.top = (my - parseInt(sz) / 2 + Math.random() * 8 - 4) + 'px';
-        document.body.appendChild(t);
-
-        // Smooth trail shrink-fade
-        setTimeout(function () {
-          t.style.opacity = '0';
-          t.style.transform = 'scale(0.1)';
-        }, 50);
-        setTimeout(function () { t.remove() }, 450);
-      }
-    });
-
-    /* OPTIMIZED PRE-GENERATED NOISE FRAMES */
     var nc = document.getElementById('noiseCanvas');
-    nc.width = 256; nc.height = 256;
-    var nctx = nc.getContext('2d');
-    var noiseFrames = [];
-    for (var f = 0; f < 5; f++) {
-      var canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 256;
-      var ctx = canvas.getContext('2d');
-      var id = ctx.createImageData(256, 256), d = id.data;
-      for (var i = 0; i < d.length; i += 4) {
-        var v = (Math.random() * 255) | 0;
-        d[i] = d[i + 1] = d[i + 2] = v;
-        d[i + 3] = 16; // soft opacity pre-baked inside pixel data
-      }
-      ctx.putImageData(id, 0, 0);
-      noiseFrames.push(canvas);
+    var trailCanvas = document.getElementById('cursorTrailCanvas');
+    var trailCtx = trailCanvas ? trailCanvas.getContext('2d') : null;
+
+    if (isMobile) {
+      if (cD) cD.style.display = 'none';
+      if (cR) cR.style.display = 'none';
+      if (nc) nc.style.display = 'none';
+      if (trailCanvas) trailCanvas.style.display = 'none';
     }
-    var curNoiseFrame = 0;
-    function drawNoise() {
-      nctx.clearRect(0, 0, 256, 256);
-      nctx.drawImage(noiseFrames[curNoiseFrame], 0, 0);
-      curNoiseFrame = (curNoiseFrame + 1) % noiseFrames.length;
+
+    var mx = 0, my = 0, rx = 0, ry = 0;
+    var trailParticles = [];
+    var lastTime = performance.now();
+
+    function resizeTrailCanvas() {
+      if (trailCanvas) {
+        trailCanvas.width = window.innerWidth;
+        trailCanvas.height = window.innerHeight;
+      }
+    }
+
+    if (trailCanvas && !isMobile) {
+      resizeTrailCanvas();
+      window.addEventListener('resize', resizeTrailCanvas);
+    }
+
+    if (!isMobile) {
+      document.addEventListener('mousemove', function (e) {
+        mx = e.clientX; my = e.clientY;
+        if (cD) {
+          cD.style.left = mx + 'px'; cD.style.top = my + 'px';
+        }
+
+        // Draw hardware-accelerated squares on trailCanvas instead of spawning DOM elements
+        if (Math.random() < 0.33) {
+          var sz = Math.random() * 4 + 4;
+          trailParticles.push({
+            x: mx + (Math.random() * 8 - 4),
+            y: my + (Math.random() * 8 - 4),
+            size: sz,
+            life: 450,
+            maxLife: 450,
+            color: '#ff0040'
+          });
+        }
+      });
+    }
+
+    /* OPTIMIZED PRE-GENERATED STATIC NOISE OVERLAY */
+    if (nc) {
+      var tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 256; tempCanvas.height = 256;
+      var tempCtx = tempCanvas.getContext('2d');
+      if (tempCtx) {
+        var id = tempCtx.createImageData(256, 256), d = id.data;
+        for (var i = 0; i < d.length; i += 4) {
+          var v = (Math.random() * 255) | 0;
+          d[i] = d[i + 1] = d[i + 2] = v;
+          d[i + 3] = 16;
+        }
+        tempCtx.putImageData(id, 0, 0);
+        try {
+          var dataUrl = tempCanvas.toDataURL();
+          nc.style.backgroundImage = 'url(' + dataUrl + ')';
+          nc.style.backgroundRepeat = 'repeat';
+        } catch (err) {
+          console.warn("Noise data URL generation failed:", err);
+        }
+      }
     }
 
     /* HARDWARE-ACCELERATED REQUESTANIMATIONFRAME LOOP */
-    function animateFrame() {
+    function animateFrame(timestamp) {
+      var dt = timestamp - lastTime;
+      lastTime = timestamp;
+      if (isNaN(dt) || dt > 100) dt = 16.67;
+
       // Smooth cursor lag
       rx += (mx - rx) * .18;
       ry += (my - ry) * .18;
-      cR.style.left = rx + 'px';
-      cR.style.top = ry + 'px';
+      if (cR) {
+        cR.style.left = rx + 'px';
+        cR.style.top = ry + 'px';
+      }
 
-      // High-performance noise cycle
-      if (Math.random() < 0.33) {
-        drawNoise();
+      // Render canvas trail particles
+      if (trailCtx && trailParticles.length > 0) {
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        trailCtx.shadowBlur = 8;
+        trailCtx.shadowColor = '#ff0040';
+        trailCtx.fillStyle = '#ff0040';
+
+        for (var i = trailParticles.length - 1; i >= 0; i--) {
+          var p = trailParticles[i];
+          p.life -= dt;
+          if (p.life <= 0) {
+            trailParticles.splice(i, 1);
+            continue;
+          }
+          var progress = p.life / p.maxLife; // 1.0 down to 0.0
+          var currentSize = p.size * (0.1 + 0.9 * progress); // shrink
+          
+          trailCtx.globalAlpha = progress;
+          trailCtx.fillRect(p.x - currentSize / 2, p.y - currentSize / 2, currentSize, currentSize);
+        }
+        trailCtx.globalAlpha = 1.0;
+      } else if (trailCtx) {
+        // Clear canvas if no particles are left
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
       }
 
       requestAnimationFrame(animateFrame);
     }
-    requestAnimationFrame(animateFrame);
+
+    if (!isMobile) {
+      requestAnimationFrame(animateFrame);
+    }
+
+    /* PERFORMANCE TOGGLE FUNCTIONS */
+    window.togglePerfMode = function() {
+      var body = document.body;
+      var btn = document.getElementById('perfToggle');
+      if (!body || !btn) return;
+
+      var isActive = body.classList.toggle('perf-mode');
+      btn.classList.toggle('active', isActive);
+      btn.textContent = 'PERF_MODE: ' + (isActive ? 'ON' : 'OFF');
+
+      if (typeof updateLayoutCache === 'function') {
+        updateLayoutCache();
+      }
+      if (typeof updateDesignSpiral === 'function') updateDesignSpiral();
+      if (typeof updateSectionSpirals === 'function') updateSectionSpirals();
+    };
+
+    // Auto-enable performance mode on mobile viewports
+    if (isMobile) {
+      document.body.classList.add('perf-mode');
+      var pBtn = document.getElementById('perfToggle');
+      if (pBtn) {
+        pBtn.classList.add('active');
+        pBtn.textContent = 'PERF_MODE: ON';
+      }
+    }
 
     /* FLICKER */
     var fl = document.getElementById('flickerEl');
     setInterval(function () {
+      if (document.body.classList.contains('perf-mode')) return;
       if (Math.random() < 0.04) {
         fl.style.background = 'rgba(255,255,255,0.04)';
         setTimeout(function () { fl.style.background = 'rgba(255,255,255,0)' }, 50 + Math.random() * 80);
@@ -208,7 +292,21 @@
 
     function goSec(i) {
       var el = document.getElementById(secs[i]);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      if (el) {
+        // Custom smooth scroll with longer duration for a slower, smoother transition
+        const duration = 800; // duration in ms (adjust for desired speed)
+        const start = scr.scrollTop;
+        const end = el.offsetTop;
+        const startTime = performance.now();
+        const easeInOut = t => 0.5 - Math.cos(t * Math.PI) / 2; // ease-in-out curve
+        const step = now => {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          scr.scrollTop = start + (end - start) * easeInOut(progress);
+          if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
     }
 
     function setActive(btn) {
@@ -224,17 +322,47 @@
       triggerReveal(secs[i]);
       if (i === 2) animateBars();
       if (i === 6 && !qStarted) initQ();
+
+      // Resume typing animation if s0 becomes active again
+      if (i === 0 && typingPaused) {
+        typingPaused = false;
+        if (typeof window.startTyping === 'function') {
+          window.startTyping();
+        }
+      }
     }
 
-    scr.addEventListener('scroll', function () {
-      var sh = scr.clientHeight;
-      var sr = scr.getBoundingClientRect();
-      secs.forEach(function (id, i) {
-        var el = document.getElementById(id); if (!el) return;
-        var top = el.getBoundingClientRect().top - sr.top;
-        if (top > -sh * 0.5 && top < sh * 0.5) updateNav(i);
+    if (typeof IntersectionObserver !== 'undefined' && scr) {
+      var observerOptions = {
+        root: scr,
+        rootMargin: '-50% 0px -50% 0px',
+        threshold: 0
+      };
+      var navObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            var index = secs.indexOf(entry.target.id);
+            if (index !== -1) {
+              updateNav(index);
+            }
+          }
+        });
+      }, observerOptions);
+      secs.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) navObserver.observe(el);
       });
-    }, { passive: true });
+    } else if (scr) {
+      scr.addEventListener('scroll', function () {
+        var sh = scr.clientHeight;
+        var sr = scr.getBoundingClientRect();
+        secs.forEach(function (id, i) {
+          var el = document.getElementById(id); if (!el) return;
+          var top = el.getBoundingClientRect().top - sr.top;
+          if (top > -sh * 0.5 && top < sh * 0.5) updateNav(i);
+        });
+      }, { passive: true });
+    }
 
     /* SCROLL-DRIVEN DESIGN SPIRAL */
     var designSection = document.getElementById('s4');
@@ -251,9 +379,9 @@
 
     // Initialize 3D spiral dots for S4 Design Gallery
     var designDotsContainer = null;
-    var designDotsCount = 80;
+    var designDotsCount = isMobile ? 0 : 40;
     var designDots = [];
-    if (spiralStage) {
+    if (spiralStage && designDotsCount > 0) {
       designDotsContainer = document.createElement('div');
       designDotsContainer.className = 'spiral-dots-container';
       designDotsContainer.style.setProperty('--dot-color', 'var(--hot)');
@@ -266,15 +394,42 @@
       }
     }
 
+    // Reusable spiral states cache object
+    var layoutCache = {
+      scrHeight: 0,
+      scrWidth: 0,
+      designSectionHeight: 0,
+      designSectionOffsetTop: 0,
+      spirals: []
+    };
+
+    function updateLayoutCache() {
+      layoutCache.scrHeight = scr ? scr.clientHeight : 0;
+      layoutCache.scrWidth = scr ? scr.clientWidth : 0;
+      if (designSection) {
+        layoutCache.designSectionHeight = designSection.offsetHeight;
+        layoutCache.designSectionOffsetTop = designSection.offsetTop;
+      }
+      sectionSpirals.forEach(function (spiral, idx) {
+        if (!layoutCache.spirals[idx]) {
+          layoutCache.spirals[idx] = {};
+        }
+        layoutCache.spirals[idx].offsetHeight = spiral.section.offsetHeight;
+        layoutCache.spirals[idx].offsetTop = spiral.section.offsetTop;
+      });
+    }
+
     function updateDesignSpiral() {
       spiralTicking = false;
       if (!designSection || !spiralStage || !designCards.length) return;
 
-      var scrollRange = Math.max(1, designSection.offsetHeight - scr.clientHeight);
-      var sectionProgress = Math.max(0, Math.min(1, (scr.scrollTop - designSection.offsetTop) / scrollRange));
+      if (document.body.classList.contains('perf-mode')) return;
+      var scrollTop = scr.scrollTop;
+      var scrollRange = Math.max(1, layoutCache.designSectionHeight - layoutCache.scrHeight);
+      var sectionProgress = Math.max(0, Math.min(1, (scrollTop - layoutCache.designSectionOffsetTop) / scrollRange));
       var cardProgress = sectionProgress * (designCards.length - 1);
-      var radiusX = Math.min(390, scr.clientWidth * (scr.clientWidth < 720 ? .28 : .31));
-      var verticalStep = scr.clientWidth < 720 ? 82 : 104;
+      var radiusX = Math.min(390, layoutCache.scrWidth * (layoutCache.scrWidth < 720 ? .28 : .31));
+      var verticalStep = layoutCache.scrWidth < 720 ? 82 : 104;
       var activeIndex = Math.max(0, Math.min(designCards.length - 1, Math.round(cardProgress)));
 
       designCards.forEach(function (card, index) {
@@ -296,7 +451,7 @@
       });
 
       // Update dots positions in S4 Design Spiral
-      if (designDots.length) {
+      if (designDots.length && !document.body.classList.contains('perf-mode')) {
         var t_min = -0.5 - cardProgress;
         var t_max = (designCards.length - 1) + 0.5 - cardProgress;
         designDots.forEach(function (dot, index) {
@@ -324,9 +479,10 @@
       requestAnimationFrame(updateDesignSpiral);
     }
 
-    scr.addEventListener('scroll', requestSpiralUpdate, { passive: true });
-    window.addEventListener('resize', requestSpiralUpdate);
-    updateDesignSpiral();
+    if (!document.body.classList.contains('perf-mode')) {
+      scr.addEventListener('scroll', requestSpiralUpdate, { passive: true });
+    }
+
 
     /* REUSABLE SPIRAL STAGES FOR THE REMAINING SECTIONS */
     var sectionSpiralConfigs = [
@@ -360,7 +516,7 @@
         return;
       }
 
-      var length = 1 + (items.length - 1) * .92;
+      var length = 1 + (items.length - 1) * .35;
       section.style.setProperty('--section-spiral-length', length.toFixed(2));
 
       var progress = document.createElement('div');
@@ -382,23 +538,25 @@
       });
 
       // Initialize 3D spiral dots for this section
-      var dotsContainer = document.createElement('div');
-      dotsContainer.className = 'spiral-dots-container';
-      var dotColor = 'var(--cyan)';
-      if (config.id === 's1') dotColor = 'var(--acid)';
-      else if (config.id === 's2') dotColor = 'var(--cyan)';
-      else if (config.id === 's3') dotColor = 'var(--purple)';
-      else if (config.id === 's5') dotColor = 'var(--pink)';
-      dotsContainer.style.setProperty('--dot-color', dotColor);
-      stage.appendChild(dotsContainer);
-
-      var sectionDotsCount = 45;
+      var sectionDotsCount = isMobile ? 0 : 20;
       var dots = [];
-      for (var dIdx = 0; dIdx < sectionDotsCount; dIdx++) {
-        var dot = document.createElement('span');
-        dot.className = 'spiral-dot';
-        dotsContainer.appendChild(dot);
-        dots.push(dot);
+      if (sectionDotsCount > 0) {
+        var dotsContainer = document.createElement('div');
+        dotsContainer.className = 'spiral-dots-container';
+        var dotColor = 'var(--cyan)';
+        if (config.id === 's1') dotColor = 'var(--acid)';
+        else if (config.id === 's2') dotColor = 'var(--cyan)';
+        else if (config.id === 's3') dotColor = 'var(--purple)';
+        else if (config.id === 's5') dotColor = 'var(--pink)';
+        dotsContainer.style.setProperty('--dot-color', dotColor);
+        stage.appendChild(dotsContainer);
+
+        for (var dIdx = 0; dIdx < sectionDotsCount; dIdx++) {
+          var dot = document.createElement('span');
+          dot.className = 'spiral-dot';
+          dotsContainer.appendChild(dot);
+          dots.push(dot);
+        }
       }
 
       sectionSpirals.push({
@@ -413,12 +571,16 @@
     function updateSectionSpirals() {
       sectionSpiralTicking = false;
 
-      sectionSpirals.forEach(function (spiral) {
-        var scrollRange = Math.max(1, spiral.section.offsetHeight - scr.clientHeight);
-        var sectionProgress = Math.max(0, Math.min(1, (scr.scrollTop - spiral.section.offsetTop) / scrollRange));
+      var scrollTop = scr.scrollTop;
+      sectionSpirals.forEach(function (spiral, idx) {
+        var cached = layoutCache.spirals[idx];
+        if (!cached) return;
+
+        var scrollRange = Math.max(1, cached.offsetHeight - layoutCache.scrHeight);
+        var sectionProgress = Math.max(0, Math.min(1, (scrollTop - cached.offsetTop) / scrollRange));
         var itemProgress = sectionProgress * (spiral.items.length - 1);
-        var radiusX = Math.min(360, scr.clientWidth * (scr.clientWidth < 720 ? .25 : .29));
-        var verticalStep = scr.clientWidth < 720 ? 72 : 92;
+        var radiusX = Math.min(360, layoutCache.scrWidth * (layoutCache.scrWidth < 720 ? .25 : .29));
+        var verticalStep = layoutCache.scrWidth < 720 ? 72 : 92;
         var activeIndex = Math.max(0, Math.min(spiral.items.length - 1, Math.round(itemProgress)));
 
         spiral.items.forEach(function (item, index) {
@@ -440,7 +602,7 @@
         });
 
         // Update dots positions in Section Spiral
-        if (spiral.dots && spiral.dots.length) {
+        if (spiral.dots && spiral.dots.length && !document.body.classList.contains('perf-mode')) {
           var t_min = -0.5 - itemProgress;
           var t_max = (spiral.items.length - 1) + 0.5 - itemProgress;
           spiral.dots.forEach(function (dot, index) {
@@ -470,7 +632,20 @@
     }
 
     scr.addEventListener('scroll', requestSectionSpiralUpdate, { passive: true });
-    window.addEventListener('resize', requestSectionSpiralUpdate);
+
+    // Initialize layout cache and resize handlers
+    updateLayoutCache();
+    var resizeTimeout;
+    window.addEventListener('resize', function () {
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(function () {
+        updateLayoutCache();
+        requestSpiralUpdate();
+        requestSectionSpiralUpdate();
+      }, 100);
+    });
+
+    updateDesignSpiral();
     updateSectionSpirals();
 
     /* 3D TILT EFFECT FOR CARDS */
@@ -487,6 +662,7 @@
         });
 
         card.addEventListener('mousemove', function (e) {
+          if (document.body.classList.contains('perf-mode')) return;
           if (!rect) rect = card.getBoundingClientRect();
           var clientX = e.clientX;
           var clientY = e.clientY;
@@ -887,10 +1063,19 @@
     var deletingSpeed = 50;
     var pauseBetweenRoles = 2000;
     var typedEl = document.getElementById("typedPosition");
+    var typingPaused = false;
 
     window.startTyping = function() {
       if (!typedEl) typedEl = document.getElementById("typedPosition");
       if (!typedEl) return;
+      
+      // Stop loop if hero section s0 is not currently active
+      if (curSec !== 0 && curSec !== -1) {
+        typingPaused = true;
+        return;
+      }
+      typingPaused = false;
+
       var currentRole = positions[posIndex];
       if (isDeleting) {
         typedEl.textContent = currentRole.substring(0, charIndex - 1);
